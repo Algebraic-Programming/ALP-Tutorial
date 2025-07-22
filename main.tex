@@ -1,38 +1,44 @@
 \documentclass{article}
 \usepackage[utf8]{inputenc}
+\usepackage[a4paper, total={6.8in, 10in}]{geometry}
+\usepackage{amsmath}
+\usepackage{url}
+\usepackage[T1]{fontenc}
+\usepackage{courier}
 \usepackage{hyperref} % For clickable links in PDF
+\usepackage{listings}
 
-\title{My First LaTeX Document for GitHub Pages}
-\author{Your Name}
+\lstset{
+  basicstyle=\ttfamily\small,
+  language=C++,
+  columns=fullflexible,
+  keepspaces=true,
+  % Map Unicode “·” and “⊙” to LaTeX-safe output:
+  literate=
+    {·}{{$\cdot$}}1
+    {⊙}{{$\odot$}}1
+    {ᵀ}{{$^\top$}}1
+    {‐}{{-}}1
+    {“}{{"`}}1      % left curly quote → opening ASCII quote
+    {”}{{'"}}1      % right curly quote → closing ASCII quote
+}
+
+\title{Algebraic Programming (ALP) Tutorial}
+\author{}
 \date{\today} % Displays the current date
 
 \begin{document}
 
 \maketitle
 
-\section*{Welcome to My GitHub Pages LaTeX Project!}
+\section*{Welcome to My GitHub Pages LaTeX Document!}
 
 This document was compiled from \LaTeX{} source code using GitHub Actions and deployed to GitHub Pages.
 
-\subsection*{About This Project}
-This is a simple demonstration to show how to publish a \LaTeX{} PDF online.
-You can use this setup for:
-\begin{itemize}
-    \item Resumes and CVs
-    \item Academic papers
-    \item Reports
-    \item Personal notes and documentation
-\end{itemize}
+\input{ALP_Tutorial.tex}
 
-\subsection*{Links}
-\begin{itemize}
-    \item You can find the source code for this project on \href{https://github.com/YourGitHubUsername/YourRepositoryName}{my GitHub repository}.
-    \item Learn more about \LaTeX{} at \href{https://www.latex-project.org/}{The \LaTeX{} Project}.
-    \item Learn more about GitHub Pages at \href{https://docs.github.com/en/pages}{GitHub Docs}.
-\end{itemize}
+\input{ALP_Transition_Path_Tutorial.tex}
 
-\subsection*{Contact}
-Feel free to reach out to me via email: \href{mailto:your.email@example.com}{your.email@example.com}.
 
 \vfill % Pushes content to the top
 \centering

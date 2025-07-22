@@ -1,0 +1,494 @@
+\section{Quick Start}
+
+This section explains how to install ALP on a Linux system and compile a simple example. ALP (Algebraic Programming) provides a C++17 library implementing the GraphBLAS interface for linear-algebra-based computations. To get started quickly:
+
+\subsection*{Installation on Linux}
+
+\begin{enumerate}
+\item Install prerequisites: Ensure you have a C++11 compatible compiler (e.g. \texttt{g++} 4.8.2 or later) with OpenMP support, CMake (>= 3.13) and GNU Make, plus development headers for libNUMA and POSIX threads. 
+For example, on Debian/Ubuntu:
+\begin{verbatim}
+sudo apt-get install build-essential libnuma-dev libpthread-stubs0-dev cmake
+\end{verbatim}
+
+\item Obtain ALP: Download or clone the ALP repository (from the official GitHub). For instance:
+\begin{verbatim}
+git clone https://github.com/Algebraic-Programming/ALP.git
+\end{verbatim}
+Then enter the repository directory.
+
+\item Build ALP: Create a build directory and invoke the provided bootstrap script to configure the project with CMake, then compile and install:
+\begin{lstlisting}[language=bash]
+$ cd ALP && mkdir build && cd build
+$ ../bootstrap.sh --prefix=../install # configure the build
+$ make -j # compile the ALP library
+$ make install # install to ../install
+\end{lstlisting}
+(You can choose a different installation prefix as needed.)
+
+\item Set up environment: After installation, activate the ALP environment by sourcing the script setenv in the install directory:
+\begin{lstlisting}[language=bash]
+$ source ../install/bin/setenv
+\end{lstlisting}
+This script updates paths to make ALP’s compiler wrapper and libraries available.
+
+\item Compile an example: ALP provides a compiler wrapper \texttt{grbcxx} to compile programs that use the ALP/GraphBLAS API. This wrapper automatically adds the correct include paths and links against the ALP library and its dependencies. For example, to compile the provided sp.cpp sample:
+\begin{lstlisting}[language=bash]
+$ grbcxx ../examples/sp.cpp -o sp_example
+\end{lstlisting}
+By default this produces a sequential program; you can add the option \texttt{-b reference\_omp} to use the OpenMP parallel backend (shared-memory parallelism). The wrapper \texttt{grbcxx} accepts other backends as well (e.g.\ \texttt{-b hybrid} for distributed memory).
+
+\item Run the program: Use the provided runner \texttt{grbrun} to execute the compiled binary. For a simple shared-memory program, running with \texttt{grbrun} is similar to using \texttt{./program} directly. For example:
+\begin{lstlisting}[language=bash]
+$ grbrun ./sp_example
+\end{lstlisting}
+(The \texttt{grbrun} tool is more relevant when using distributed backends or controlling the execution environment; for basic usage, the program can also be run directly.)
+\end{enumerate}
+After these steps, ALP is installed and you are ready to develop ALP-based programs. In the next sections we introduce core ALP concepts and walk through a simple example program.
+
+\section{Introduction to ALP Concepts}
+
+ALP exposes a programming model similar to the GraphBLAS standard, using algebraic containers (vectors, matrices, etc.) and algebraic operations on those containers. This section covers the basic data structures, the algebraic structures (semirings) that define how arithmetic is done, and key primitive operations (such as matrix-vector multiply and element-wise operations).
+
+\subsection{Vectors and Matrices in ALP}
+
+The primary container types in ALP are \texttt{grb::Vector<T>} and \texttt{grb::Matrix<T>}, defined in the \texttt{grb} namespace. These are templated on a value type \texttt{T}, which is the type of elements stored. Both vectors and matrices can be sparse, meaning they efficiently represent and operate on mostly-zero data by storing only nonzero elements
+webspace.science.uu.nl
+. For example, one can declare a vector of length 100000 and a 150000$\times$100000 matrix as:
+\begin{lstlisting}
+grb::Vector<double> x(100000), y(150000);
+grb::Matrix<void> A(150000, 100000);
+\end{lstlisting}
+In this snippet, x and y are vectors of type double. The matrix A is declared with type void, which in ALP means it holds only the pattern of nonzero positions (no numeric values). Typically, one would use a numeric type (e.g. double) for matrix values; a void matrix is a special case where existence of an entry is all that matters (useful for boolean or unweighted graphs).
+
+By default, new vectors/matrices start empty (with no stored elements). You can query properties like length or dimensions via \texttt{grb::size(vector)} for vector length, \texttt{grb::nrows(matrix)} and \texttt{grb::ncols(matrix)} for matrix dimensions, and \texttt{grb::nnz(container)} for the number of stored nonzero elements.
+
+\subsubsection*{Exercise: Allocating Vectors and Matrices in ALP}
+
+Write a C++ program that uses ALP to allocate two vectors and one matrix as follows:
+\begin{itemize}
+  \item A \texttt{grb::Vector<double>} \texttt{x} of length 100, with initial capacity 100.
+  \item A \texttt{grb::Vector<double>} \texttt{y} of length 1000, with initial capacity 100.
+  \item A \texttt{grb::Matrix<double>} \texttt{A} of size $(100 \times 1000)$, with initial capacity 100.
+\end{itemize}
+Make sure to include the necessary ALP headers, initialize the ALP context, and set the capacities via \texttt{resize}.
+
+\begin{lstlisting}[language=C++,basicstyle=\ttfamily\small, showstringspaces=false]
+#include <iostream>
+#include <graphblas.hpp>
+
+int main() {
+    // 1) Initialize ALP (using the sequential reference backend)
+    grb::init< grb::reference >();
+
+    // 2) Allocate vector x of length 100
+    grb::Vector< double, grb::reference > x( 100 );
+    grb::resize( x, 100 ); // Set initial capacity of x to 100 nonzeros
+
+    // 3) Allocate vector y of length 1000
+    grb::Vector< double, grb::reference > y( 1000 );
+    grb::resize( y, 100 ); // Set initial capacity of y to 100 nonzeros
+
+    // 4) Allocate matrix A of size 100 x 1000
+    grb::Matrix< double, grb::reference > A( 100, 1000 );
+    grb::resize( A, 100 );  // Set initial capacity of A to 100 nonzeros
+
+    // 5) Print the capacities to verify
+    std::cout << "Capacity of x: " << grb::capacity( x ) << std::endl;
+    std::cout << "Capacity of y: " << grb::capacity( y ) << std::endl;
+    std::cout << "Capacity of A: " << grb::capacity( A ) << std::endl;
+
+    // 6) Finalize ALP
+    grb::finalize();
+    
+    return 0;
+}
+\end{lstlisting}
+
+When you run this program, ALP will print informational messages about initialization and finalization, and you will see lines reporting each container’s capacity. In particular, you should observe output similar to:
+
+\begin{lstlisting}
+Info: grb::init (reference) called.
+Capacity of x: 100
+Capacity of y: 1000
+Capacity of A: 1000
+Info: grb::finalize (reference) called.
+\end{lstlisting}
+
+\subsection{Semirings and Algebraic Operations}
+
+A key feature of GraphBLAS (and ALP) is that operations are defined over semirings rather than just the conventional arithmetic operations. A semiring consists of a pair of operations (an “addition” and a “multiplication”) along with their identity elements, which generalize the standard arithmetic (+ and $\times$). GraphBLAS allows using different semirings to, for example, perform computations like shortest paths or logical operations by substituting the plus or times operations with min, max, logical OR/AND, etc. In GraphBLAS, matrix multiplication is defined in terms of a semiring: the “add” operation is used to accumulate results, and the “multiply” operation is used when combining elements.
+ALP lets you define and use custom \textbf{semirings} by specifying:
+
+
+\begin{itemize}
+  \item \textbf{A binary monoid:} an associative, commutative ``addition'' operation with an identity element. Examples:
+  \begin{itemize}
+    \item \texttt{(+}, 0\texttt{)} — the usual addition over numbers
+    \item \texttt{(min}, $+\infty$\texttt{)} — useful for computing minima
+  \end{itemize}
+  
+  \item \textbf{A binary multiplicative operator:} a second operation (not necessarily arithmetic multiplication), with its own identity element. Examples:
+  \begin{itemize}
+    \item \texttt{(*}, 1\texttt{)} — standard multiplication
+    \item \texttt{(AND}, \texttt{true}\texttt{)} — logical semiring for Boolean algebra
+  \end{itemize}
+\end{itemize}
+
+A semiring is a combination of a multiplicative operator and an additive monoid. Many common semirings are provided or can be constructed. For instance, the plus-times semiring uses standard addition as the accumulation (monoid) and multiplication as the combination operator – this yields ordinary linear algebra over real numbers. One can also define a \texttt{min-plus} semiring (useful for shortest path algorithms, where "addition" is min and "multiplication" is numeric addition). ALP’s design allows an “almost unlimited variety of operators and types” in semirings.
+
+In code, ALP provides templates to construct these. For example, one can define:
+\begin{lstlisting}
+using Add = grb::operators::add<double>;
+using AddMonoid = grb::Monoid<Add, grb::identities::zero>;
+using Mul = grb::operators::mul<double>;
+using PlusTimes = grb::Semiring<Mul, AddMonoid>;
+PlusTimes plusTimesSemiring;
+\end{lstlisting}
+Here we built the plus-times semiring for \texttt{double}: we use the provided addition operator and its identity (zero) to make a monoid, then combine it with the multiply operator to form a semiring. ALP comes with a library of predefined operator functors (in \texttt{grb::operators}) and identities (in \texttt{grb::identities}) for common types. You can also define custom functor structs if needed. In many cases, using the standard \texttt{plusTimesSemiring} (or simply passing operators/monoids directly to functions) is sufficient for basic algorithms.
+
+\subsection{Primitive Operations (mxv, eWiseMul, dot, etc.)}
+
+Using the above containers and semirings, ALP provides a set of primitive functions in the \texttt{grb} namespace to manipulate the data. These functions are free functions (not class methods) and typically take the output container as the first parameter (by reference), followed by input containers and an operator or semiring specification. The most important primitives include:
+
+    \textbf{grb::set} – Assigns all elements of a container to a given value. For example, \texttt{grb::set(x, 1.0)} will set every entry of vector \texttt{x} to $1.0$ (making all indices present with value 1.0). This is useful for initialization (if called on an empty vector, it will insert all indices with that value). There is also \texttt{grb::setElement(container, value, index[, index2])} to set a single element: for a vector, you provide an index; for a matrix, a row and column. For example, \texttt{grb::setElement(y, 3.0, n/2)} sets $y_{n/2} = 3.0$.
+\newline
+
+    \textbf{grb::mxv} – Perform matrix-vector multiplication on a semiring. The call \texttt{grb::mxv(u, A, v, semiring)} computes $u = A \otimes v$ (where $\otimes$ denotes matrix-vector multiply under the given semiring). For the plus-times semiring, this corresponds to the usual linear algebra operation $u_i = \sum_j A_{ij} \times v_j$ (summing with + and multiplying with $\times$). The output vector \texttt{u} must be pre-allocated to the correct size (number of rows of $A$). By default, ALP’s \texttt{mxv} adds into the output vector (as if doing $u += A \times v$). If you want to overwrite \texttt{u} instead of accumulate, you may need to explicitly set \texttt{u} to the identity element (e.g. zero) beforehand or use descriptors (advanced options) – but for most use cases, initializing $u$ to 0 and then calling mxv is sufficient to compute $u = A x$. For example, \texttt{grb::mxv(y, A, x, plusTimesSemiring)} will compute $y_i = \sum_j A_{ij} x_j$ using standard arithmetic (assuming \texttt{y} was zeroed initially).
+\newline
+
+
+        \textbf{grb::eWiseMul / grb::eWiseAdd} (element-wise operations): These functions combine two containers element-by-element. For instance, \texttt{grb::eWiseApply(z, x, y, op)} will apply the binary operator \texttt{op} to each pair of elements $x_i, y_i$ that exist (with matching index $i$), storing the result in $z_i$.
+
+\begin{itemize}
+  \item \textbf{Intersection (eWiseMul):} If you use a plain binary operator (not a monoid) like multiplication or min, the result will include only entries where \emph{both} input containers have entries. Essentially, missing values are ignored. For example:
+  \begin{itemize}
+    \item \texttt{grb::eWiseApply(z, x, x, grb::operators::min<double>())} sets $z_i = \min(x_i, x_i) = x_i$ for all indices $i$ where $x_i$ exists.
+  \end{itemize}
+
+  \item \textbf{Union (eWiseAdd):} If you provide a \emph{monoid} (which defines an identity), ALP will treat missing elements as identity values and operate over the union of indices. For example:
+  \begin{itemize}
+    \item If $y$ has a value at index $k$ that $x$ does not, \texttt{grb::eWiseApply(z, x, y, addMonoid)} yields $z_k = x_k + y_k = 0 + y_k = y_k$, where 0 is the identity of addition.
+  \end{itemize}
+  Using an additive monoid results in an element-wise sum (union), while using a multiplicative operator gives an element-wise product (intersection).
+\end{itemize}
+
+    In summary, to do element-wise multiplication (intersection), you might call:
+    \texttt{grb::eWiseApply(z, x, y, grb::operators::mul<double>())},
+    which computes $z_i = x_i \times y_i$ for each $i$ that has both $x_i$ and $y_i$. To do an element-wise addition (union), you could call
+    \texttt{grb::eWiseApply(z, x, y, addMonoid)}, where \texttt{addMonoid} encapsulates “+” with identity 0, resulting in $z_i = x_i + y_i$ for all indices that exist in either $x$ or $y$. (If an index is missing in one operand, that operand contributes 0.)
+\newline
+
+      \textbf{grb::dot} – Compute the dot product of two vectors. This is essentially a special case of a matrix-vector multiply or a reduce operation. ALP provides \texttt{grb::dot(result, u, v, semiring)} to compute a scalar result = $u^T \otimes v$ under a given semiring. For the standard plus-times semiring, \texttt{grb::dot(alpha, u, v, plusTimesSemiring)} will calculate $\alpha = \sum_i (u_i \times v_i)$ (i.e. the dot product of $u$ and $v$). If you use a different monoid or operator, you can compute other pairwise reductions (for example, using a \texttt{min} monoid with logical multiplication could compute something like an “AND over all i” if that were needed). In most cases, you'll use dot with the default arithmetic semiring for inner products. The output \texttt{alpha} is a scalar (primitive type) passed by reference, which will be set to the resulting value.
+\newline
+
+      \textbf{grb::apply} – Apply a unary operator or indexed operation to each element of a container. The function \texttt{grb::apply(z, x, op)} applies a given unary functor \texttt{op} to each element of vector (or matrix) \texttt{x}, writing the result into \texttt{z}. For example, if \texttt{op} is a functor that squares a number, \texttt{grb::apply(z, x, op)} would produce $z_i = \textit{op}(x_i)$ for all stored elements of $x$. There are also forms of \texttt{apply} that use a binary operator with a scalar, effectively applying an affine operation. For instance, ALP could support \texttt{grb::apply(z, x, grb::operators::add<double>(), 5.0)} to add 5 to each element of $x$ (if such an overload exists – conceptually, this would treat it as $z_i = x_i + 5$ for all $i$). In general, \texttt{apply} is like a map operation over all elements (it does not change the sparsity pattern — if $x$ has an element at $i$, $z$ will have an element at $i$ after apply, unless filtered by a mask).
+
+\paragraph{API usage notes:} All the above operations require that output parameters be passed by reference, since they are modified in place (e.g., \texttt{y} in \texttt{grb::mxv(y, A, x, ...)} is updated with the result). Input objects are typically passed by const-reference. You should ensure that the output container is allocated with the correct size beforehand – ALP will not automatically resize vectors or matrices on operation calls if dimensions mismatch. If dimensions do not agree (e.g., you try to multiply an $m\times n$ matrix with a vector of length not $n$), the function will return an error code to indicate the misuse. In fact, most ALP primitives return a status code of type \texttt{grb::RC} (with \texttt{grb::SUCCESS} indicating success). For clarity, our code examples will omit explicit error handling, but in a real program you may check the returned code of each operation.
+
+In the next section, we will put these concepts together in a concrete example.
+
+
+
+\section{Simple Example}
+
+To illustrate ALP usage, let's create a simple C++ program that:
+\begin{itemize}
+\item Initializes a small matrix $A$ and vector $x$.
+\item Uses \textbf{set} and \textbf{setElement} to assign values.
+\item Performs a matrix-vector multiplication $y = A \times x$ (using \textbf{mxv} with the plus-times semiring).
+\item Computes a dot product $d = x \cdot x$ (using \textbf{dot}).
+\item Performs an element-wise multiplication $z = x * x$ (using \textbf{eWiseApply} with multiply operator).
+\item Prints the results.
+\end{itemize}
+
+Below is the code for this example, with commentary:
+
+\begin{lstlisting}[caption={Example program using ALP/GraphBLAS primitives in C++}, label=lst:example, showstringspaces=false]
+
+/*
+ * example.cpp - Corrected minimal ALP (GraphBLAS) example.
+ *
+ * To compile (using the reference OpenMP backend):
+ *    grbcxx -b reference_omp example.cpp -o example
+ *
+ * To run:
+ *    grbrun ./example
+ */
+
+#include <cstdio>
+#include <iostream>
+#include <vector>
+#include <utility>   // for std::pair
+#include <array>
+
+#include <graphblas.hpp>
+
+using namespace grb;
+
+// Indices and values for our sparse 3x3 matrix A:
+//
+//      A = [ 1   0   2 ]
+//          [ 0   3   4 ]
+//          [ 5   6   0 ]
+//
+// We store the nonzero entries via buildMatrixUnique.
+static const size_t Iidx[6]    = { 0, 0, 1, 1, 2, 2 };  // row indices
+static const size_t Jidx[6]    = { 0, 2, 1, 2, 0, 1 };  // column indices
+static const double Avalues[6] = { 1.0, 2.0, 3.0, 4.0, 5.0, 6.0 };
+
+int main(int argc, char **argv) {
+    (void)argc;
+    (void)argv;
+    std::printf("example (ALP/GraphBLAS) corrected API usage\n\n");
+
+    //------------------------------
+    // 1) Create a 3x3 sparse matrix A
+    //------------------------------
+    std::printf("Step 1: Constructing a 3x3 sparse matrix A.\n");
+    Matrix<double> A(3, 3);
+    // Reserve space for 6 nonzeros
+    resize(A, 6);
+    // Populate A from (Iidx,Jidx,Avalues)
+    buildMatrixUnique(
+        A,
+        &(Iidx[0]),
+        &(Jidx[0]),
+        Avalues,
+        /* nvals = */ 6,
+        SEQUENTIAL
+    );
+
+    //------------------------------
+    // 2) Create a 3-element vector x and initialize x = [1, 2, 3]^T
+    //------------------------------
+    std::printf("Step 2: Creating vector x = [1, 2, 3]^T.\n");
+    Vector<double> x(3);
+    set<descriptors::no_operation>(x, 0.0);           // zero-out
+    setElement<descriptors::no_operation>(x, 1.0, 0); // x(0) = 1.0
+    setElement<descriptors::no_operation>(x, 2.0, 1); // x(1) = 2.0
+    setElement<descriptors::no_operation>(x, 3.0, 2); // x(2) = 3.0
+
+    //------------------------------
+    // 3) Create two result vectors y and z (dimension 3)
+    //------------------------------
+    Vector<double> y(3), z(3);
+    set<descriptors::no_operation>(y, 0.0);
+    set<descriptors::no_operation>(z, 0.0);
+
+    //------------------------------
+    // 4) Use the built-in “plusTimes” semiring alias
+    //      (add = plus, multiply = times, id‐add = 0.0, id-mul = 1.0)
+    //------------------------------
+    auto plusTimes = grb::semirings::plusTimes<double>();
+
+    //------------------------------
+    // 5) Compute y = A·x  (matrix‐vector multiply under plus‐times)
+    //------------------------------
+    std::printf("Step 3: Computing y = A·x under plus‐times semiring.\n");
+    {
+        RC rc = mxv<descriptors::no_operation>(y, A, x, plusTimes);
+        if(rc != SUCCESS) {
+            std::cerr << "Error: mxv(y,A,x) failed with code " << toString(rc) << "\n";
+            return (int)rc;
+        }
+    }
+
+    //------------------------------
+    // 6) Compute z = x ⊙ x  (element‐wise multiply) via eWiseApply with mul
+    //------------------------------
+    std::printf("Step 4: Computing z = x ⊙ x (element‐wise multiply).\n");
+    {
+        RC rc = eWiseApply<descriptors::no_operation>(
+            z, x, x,
+            grb::operators::mul<double>()   // plain multiplication ⊙
+        );
+        if(rc != SUCCESS) {
+            std::cerr << "Error: eWiseApply(z,x,x,mul) failed with code " << toString(rc) << "\n";
+            return (int)rc;
+        }
+    }
+    
+    //------------------------------
+    // 7) Compute dot_val = xᵀ·x  (dot‐product under plus‐times semiring)
+    //------------------------------
+    std::printf("Step 5: Computing dot_val = xᵀ·x under plus‐times semiring.\n");
+    double dot_val = 0.0;
+    {
+        RC rc = dot<descriptors::no_operation>(dot_val, x, x, plusTimes);
+        if(rc != SUCCESS) {
+            std::cerr << "Error: dot(x,x) failed with code " << toString(rc) << "\n";
+            return (int)rc;
+        }
+    }
+
+    //------------------------------
+    // 8) Print x, y, z, and dot_val
+    //    We reconstruct each full 3 - vector by filling an std::array<3,double>
+    //------------------------------
+    auto printVector = [&](const Vector<double> &v, const std::string &name) {
+        // Initialize all entries to zero
+        std::array<double,3> arr = { 0.0, 0.0, 0.0 };
+        // Overwrite stored (nonzero) entries
+        for(const auto &pair : v) {
+            // pair.first = index, pair.second = value
+            arr[pair.first] = pair.second;
+        }
+        // Print
+        std::printf("%s = [ ", name.c_str());
+        for(size_t i = 0; i < 3; ++i) {
+            std::printf("%g", arr[i]);
+            if(i + 1 < 3) std::printf(", ");
+        }
+        std::printf(" ]\n");
+    };
+
+    std::printf("\n-- Results --\n");
+    printVector(x, "x");
+    printVector(y, "y = A·x");
+    printVector(z, "z = x ⊙ x");
+    std::printf("dot(x,x) = %g\n\n", dot_val);
+
+    return EXIT_SUCCESS;
+}
+\end{lstlisting}
+
+In this program, we manually set up a $3\times3$ matrix $A$:
+\[
+A = \begin{pmatrix}
+1 & 0 & 2 \\
+0 & 3 & 4 \\
+5 & 6 & 0
+\end{pmatrix},
+\]
+
+
+and a vector $x = [1,2,3]^T$. The code multiplies $A$ by $x$, producing $y = A \times x$. Given the above $A$ and $x$, the result should be:
+
+\[
+y = \begin{pmatrix}
+7 \\
+18 \\
+17
+\end{pmatrix},
+\]
+
+because
+$y_0 = 1\cdot 1 + 0\cdot 2 + 2\cdot 3 = 7$,
+$y_1 = 0\cdot1 + 3\cdot2 + 4\cdot3 = 18$,
+$y_2 = 5\cdot1 + 6\cdot2 + 0\cdot3 = 17$.
+
+We also compute the dot product $x \cdot x = 1^2 + 2^2 + 3^2 = 14$ and the element-wise product $z = x * x = [1,4,9]^T$. The program then extracts the results with \texttt{grb::extractElement} (to get values from the containers) and prints them. Running this program would produce output similar to:
+
+\begin{verbatim}
+y = [7, 18, 17]
+x . x = 14
+z (element-wise product of x with x) = [1, 4, 9]
+\end{verbatim}
+
+This confirms that our ALP operations worked as expected. The code demonstrates setting values, performing an \texttt{mxv} multiplication, an element-wise multiply, and a dot product, covering several fundamental GraphBLAS operations.
+
+
+When you run the example, the program first prints each step of the computation (building the matrix, creating the vector, etc.). In particular, you will see lines like
+
+\begin{lstlisting}
+Step 1: Constructing a 3x3 sparse matrix A.
+Step 2: Creating vector x = [1, 2, 3]^T.
+Step 3: Computing y = A·x under plus‐times semiring.
+Step 4: Computing z = x ⊙ x (element‐wise multiply).
+Step 5: Computing dot_val = xᵀ·x under plus‐times semiring.
+
+\end{lstlisting}
+
+After these messages, the program prints the final results for 
+\(\mathbf{x}\), \(\mathbf{y}\), \(\mathbf{z}\), and \(\mathrm{dot}(\mathbf{x},\mathbf{x})\). In this particular example (with 
+\[
+A = 
+\begin{bmatrix}
+0 & 1 & 2 \\
+0 & 3 & 4 \\
+5 & 6 & 0
+\end{bmatrix},\quad
+\mathbf{x} = \begin{bmatrix}1\\2\\3\end{bmatrix}),
+\]
+one obtains
+\[
+\mathbf{y} \;=\; A \otimes \mathbf{x} \;=\; \begin{bmatrix}7\\18\\17\end{bmatrix},
+\quad
+\mathbf{z} \;=\; \mathbf{x} \,\odot\, \mathbf{x} \;=\; \begin{bmatrix}1\\4\\9\end{bmatrix},
+\quad
+\mathrm{dot}(\mathbf{x},\mathbf{x}) \;=\; 14.
+\]
+Hence, immediately after the step‐headings, the console will display something like:
+\begin{lstlisting}
+// Step 4: Computing z = x ⊙ x (element‐wise multiply).
+x = [ 1, 2, 3 ]
+y = A·x = [ 7, 18, 17 ]
+z = x ⊙ x = [ 1, 4, 9 ]
+dot(x,x) = 14
+\end{lstlisting}
+
+
+\section{Makefile and CMake Instructions}
+
+Finally, we provide guidance on compiling and running the above example in your own development environment. If you followed the installation steps and used \texttt{grbcxx}, compilation is straightforward. Here we outline two approaches: using the ALP wrapper scripts, and integrating ALP manually via a build system.
+
+\subsection*{Using the ALP compiler wrapper}
+
+The simplest way to compile your ALP-based program is to use the provided wrapper. After sourcing the ALP environment (setenv script), the commands \texttt{grbcxx} and \texttt{grbrun} are available in your PATH. You can compile the example above by saving it (e.g. as \texttt{example.cpp}) and running:
+\begin{lstlisting}[language=bash]
+$ grbcxx example.cpp -o example
+\end{lstlisting}
+This will automatically invoke \texttt{g++} with the correct include directories and link against the ALP library and its required libraries (NUMA, pthread, etc.). By default, it uses the sequential backend. To enable parallel execution with OpenMP, add the flag \texttt{-b reference\_omp} (for shared-memory parallelism). For instance:
+
+
+\begin{lstlisting}[language=bash]
+$ grbcxx -b reference_omp example.cpp -o example
+\end{lstlisting}
+After compilation, run the program with:
+\begin{lstlisting}[language=bash]
+$ grbrun ./example
+\end{lstlisting}
+
+(You can also run \texttt{./example} directly for a non-distributed run; \texttt{grbrun} is mainly needed for orchestrating distributed runs or setting up the execution environment.)
+
+\subsection*{Using a custom build (Make/CMake)}
+
+If you prefer to compile without the wrapper (for integration into an existing project or custom build system), you need to instruct your compiler to include ALP's headers and link against the ALP library and dependencies. The ALP installation (at the chosen \texttt{--prefix}) provides an include directory and a library directory.
+
+For example, if ALP is installed in \texttt{../install} as above, you could compile the program manually with:
+\begin{lstlisting}[language=bash]
+$ g++ -std=c++17 example.cpp
+-I../install/include -L../install/lib
+-lgraphblas -lnuma -lpthread -lm -fopenmp -o example
+\end{lstlisting}
+Here we specify the include path for ALP headers and link with the ALP GraphBLAS library (assumed to be named \texttt{libgraphblas}) as well as libnuma, libpthread, libm (math), and OpenMP (the \texttt{-fopenmp} flag). These additional libraries are required by ALP (as noted in the install documentation). Using this command (or a corresponding Makefile rule) will produce the executable \texttt{example}.
+
+If you are using CMake for your own project, you can integrate ALP as follows. There may not be an official CMake package for ALP, but you can use \texttt{find\_library} or hard-code the path. For instance, in your \texttt{CMakeLists.txt}:
+
+\begin{lstlisting}
+    cmake_minimum_required(VERSION 3.13)
+    project(ALPExample CXX)
+    find_package(OpenMP REQUIRED) # find OpenMP for -fopenmp
+    Set ALP install paths (adjust ../install to your prefix)
+    
+    include_directories("../install/include")
+    link_directories("../install/lib")
+    
+    add_executable(example example.cpp)
+    target_link_libraries(example PRIVATE
+        graphblas # ALP GraphBLAS library
+        OpenMP::OpenMP_CXX # OpenMP (threading support)
+        pthread numa m # Pthreads, NUMA, math libraries
+    )
+\end{lstlisting}
+
+This will ensure the compiler knows where to find \texttt{graphblas.hpp} and links the required libraries. After configuring with CMake and building (via \texttt{make}), you can run the program as usual.
+
+\vspace{1ex}
+
+Note: If ALP provides a CMake package file, you could use \texttt{find\_package} for ALP, but at the time of writing, linking manually as above is the general approach. Always make sure the library names and paths correspond to your installation. The ALP documentation mentions that programs should link with \texttt{-lnuma}, \texttt{-lpthread}, \texttt{-lm}, and OpenMP flags in addition to the ALP library.
+
+\bigskip
+
+This tutorial has introduced the fundamentals of using ALP/GraphBLAS in C++ on Linux, from installation to running a basic example. With ALP set up, you can explore more complex graph algorithms and linear algebra operations, confident that the library will handle parallelization and optimization under the hood. Happy coding!
