@@ -55,7 +55,7 @@ jobs:
       # 'mk4ht' is now guaranteed to be available in this container environment
       run: |
         echo "Starting HTML compilation with mk4ht..."
-        mk4ht htlatex main.tex "xhtml" "-p"
+        mk4ht htlatex main.tex "config.cfg,xhtml" "-p"
         
         # Create output directory and move files
         mkdir -p html_output

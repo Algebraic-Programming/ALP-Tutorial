@@ -7,12 +7,51 @@
 \usepackage{courier}
 \usepackage{hyperref} % For clickable links in PDF
 \usepackage{listings}
+\usepackage{xcolor}
+
+% \lstset{
+%   % Other useful options
+%   breaklines=true, % Automatic line breaking for long lines
+%   breakatwhitespace=true, % Break lines only at whitespace
+%   tabsize=2, % Number of spaces a tab represents
+%   captionpos=b, % Caption position: b (bottom) or t (top)
+%   showspaces=false, % Do not show dots for spaces
+%   showtabs=false, % Do not show markers for tabs
+%   showstringspaces=false, % Do not show dots for spaces within strings
+%   extendedchars=true, % Allow extended ASCII characters
+%   inputencoding=utf8, % Specify input encoding
+%   literate={_}{_}1 {~}{~}1 {^}{^}1 {\textless}{<}1 {\textgreater}{>}1, % Handle special characters
+% }
 
 \lstset{
+  % Colors (requires xcolor package)
+  backgroundcolor=\color[rgb]{0.95,0.95,0.95}, % Light gray background (adjust RGB as needed)
+  commentstyle=\color[rgb]{0.2,0.4,0.2}\ttfamily\small, % Dark green comments
+  keywordstyle=\color[rgb]{0.6,0.0,0.0}\bfseries, % Dark red bold keywords
+  stringstyle=\color[rgb]{0.0,0.0,0.8}, % Blue strings
+  numberstyle=\small\color{gray}, % Small gray line numbers
+  % Frame and numbering
+  frame=single, % Draws a single frame around the listing
+  framesep=5pt, % Space between the frame and the code
+  rulecolor=\color{black}, % Color of the frame
+  numbers=left, % Display line numbers on the left
+  stepnumber=1, % Increment line numbers by 1
+  firstnumber=auto, % Start numbering from 1 for each new listing
+  % Language settings
   basicstyle=\ttfamily\small,
   language=C++,
   columns=fullflexible,
   keepspaces=true,
+  % Other useful options
+  breaklines=true, % Automatic line breaking for long lines
+  breakatwhitespace=true, % Break lines only at whitespace
+  tabsize=2, % Number of spaces a tab represents
+  captionpos=b, % Caption position: b (bottom) or t (top)
+  showspaces=false, % Do not show dots for spaces
+  showtabs=false, % Do not show markers for tabs
+  showstringspaces=false, % Do not show dots for spaces within strings
+  extendedchars=true, % Allow extended ASCII characters
+  inputencoding=utf8, % Specify input encoding
   % Map Unicode “·” and “⊙” to LaTeX-safe output:
   literate=
     {·}{{$\cdot$}}1
