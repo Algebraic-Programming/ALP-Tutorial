@@ -79,8 +79,6 @@ The ALP/Solver transition path provides a C-style interface for initializing and
 
 \item \textbf{sparse\_cg\_solve(handle, x, b):} Runs the CG iteration to solve $Ax = b$. Here b is the right-hand side vector (input), and x is the solution vector (output). You should allocate both of these arrays of length n beforehand. The solver will iterate until it converges to a solution within some default tolerance or until it reaches an iteration limit. On input, you may put an initial guess in x. If not, it's safe to initialize x to zero (the solver will start from $x_0 = 0$ by default in that case). Upon return, x will contain the approximate solution. Return: 0 if the solution converged (or still 0 if it ran the maximum iterations – specific error codes might indicate divergence or other issues in future versions).
 
-\end{itemize}
-
 \item \textbf{sparse\_cg\_destroy(handle):} Destroys the solver instance and releases any resources associated with the given handle. After this, the handle becomes invalid. Always call this when you are done solving to avoid memory leaks. Return: 0 on success (and the handle pointer may be set to NULL or invalid after). This API is non-blocking in the sense that internally ALP may overlap operations (like sparse matrix-vector multiplications and vector updates) and use asynchronous execution for performance. However, the above functions themselves appear synchronous. For example, sparse\_cg\_solve will only return after the solve is complete (there’s no separate “wait” call exposed in this C interface). The benefit of ALP’s approach is that you, the developer, don’t need to manage threads or message passing at all ALP’s GraphBLAS engine handles parallelism behind the scenes. You just call these routines as you would any standard library. Now, let’s put these functions into practice with a concrete example.
 \end{itemize}
 
@@ -193,7 +191,7 @@ Let’s break down what happens here:
 
 
 
-\section{Building and Running the Example}
+\section*{Building and Running the Example}
 To compile the above code with ALP, we will use the direct linking option as discussed. 
 \begin{lstlisting}[language=bash]
 g++ example.cpp -o cg_demo \
