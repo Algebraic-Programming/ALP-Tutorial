@@ -24,7 +24,7 @@ git clone https://github.com/Algebraic-Programming/ALP.git
 Then enter the repository directory.
 
 \item Build ALP: Create a build directory and invoke the provided bootstrap script to configure the project with CMake, then compile and install:
-\begin{lstlisting}[language=bash]
+\begin{lstlisting}[language=bash, basicstyle=\ttfamily\small, showstringspaces=false]
 $ cd ALP && mkdir build && cd build
 $ ../bootstrap.sh --prefix=../install # configure the build
 $ make -j # compile the ALP library
@@ -35,19 +35,19 @@ $ source ../install/bin/setenv
 (You can choose a different installation prefix as needed.)
 
 \item Set up environment: After installation, activate the ALP environment by sourcing the script setenv in the install directory:
-\begin{lstlisting}[language=bash]
+\begin{lstlisting}[language=bash, basicstyle=\ttfamily\small, showstringspaces=false]
 $ source ../install/bin/setenv
 \end{lstlisting}
 This script updates paths to make ALP's compiler wrapper and libraries available.
 
 \item Compile an example: ALP provides a compiler wrapper \texttt{grbcxx} to compile programs that use the ALP/GraphBLAS API. This wrapper automatically adds the correct include paths and links against the ALP library and its dependencies. For example, to compile the provided sp.cpp sample:
-\begin{lstlisting}[language=bash]
+\begin{lstlisting}[language=bash, basicstyle=\ttfamily\small, showstringspaces=false]
 $ grbcxx ../examples/sp.cpp -o sp_example
 \end{lstlisting}
 By default this produces a sequential program; you can add the option \texttt{-b reference\_omp} to use the OpenMP parallel backend (shared-memory parallelism). The wrapper \texttt{grbcxx} accepts other backends as well (e.g.\ \texttt{-b hybrid} for distributed memory).
 
 \item Run the program: Use the provided runner \texttt{grbrun} to execute the compiled binary. For a simple shared-memory program, running with \texttt{grbrun} is similar to using \texttt{./program} directly. For example:
-\begin{lstlisting}[language=bash]
+\begin{lstlisting}[language=bash, basicstyle=\ttfamily\small, showstringspaces=false]
 $ grbrun ./sp_example
 \end{lstlisting}
 (The \texttt{grbrun} tool is more relevant when using distributed backends or controlling the execution environment; for basic usage, the program can also be run directly.)
@@ -58,7 +58,7 @@ You can also specify a backend with the -b flag. For instance, -b reference buil
 
 \textbf{Direct linking option}: If you prefer to compile with your usual compiler, you need to include ALP's headers and link against the ALP libraries manually. For the CG solver transition path, that typically means linking against the sparse solver library (e.g. libspsolver\_shmem\_parallel for the parallel version) and any core ALP libraries it depends on. For example, if ALP is installed in /opt/alp , you might compile with:
 
-\begin{lstlisting}[language=bash]
+\begin{lstlisting}[language=bash, basicstyle=\ttfamily\small, showstringspaces=false]
 gcc -I/opt/alp/include -L/opt/alp/lib \
 -lspsolver_shmem_parallel -lalp_cspblas_shmem_parallel \
 my_program.c -o my_program
@@ -106,7 +106,7 @@ We will hard-code $A$ in CRS format (also called CSR: Compressed Sparse Row) for
 Below is a complete program using ALP’s CG solver to solve for $x$. We include the necessary ALP header
 for the solver API, set up the matrix and vectors, call the API functions in order, and then print the result.
 
-\begin{lstlisting}[ label=lst:example, showstringspaces=false]
+\begin{lstlisting}[language=C++, label=lst:example, showstringspaces=false, basicstyle=\ttfamily\small, caption={Example program using ALP's CG solver API}]s
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -193,7 +193,7 @@ Let’s break down what happens here:
 
 \section*{Building and Running the Example}
 To compile the above code with ALP, we will use the direct linking option as discussed. 
-\begin{lstlisting}[language=bash]
+\begin{lstlisting}[language=bash, basicstyle=\ttfamily\small, showstringspaces=false]
 g++ example.cpp -o cg_demo \
   -I install/include \
   -L install/lib \

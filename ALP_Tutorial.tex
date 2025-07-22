@@ -107,7 +107,7 @@ int main() {
 
 When you run this program, ALP will print informational messages about initialization and finalization, and you will see lines reporting each container’s capacity. In particular, you should observe output similar to:
 
-\begin{lstlisting}
+\begin{lstlisting} [language=bash, basicstyle=\ttfamily\small, showstringspaces=false]
 Info: grb::init (reference) called.
 Capacity of x: 100
 Capacity of y: 1000
@@ -138,7 +138,7 @@ ALP lets you define and use custom \textbf{semirings} by specifying:
 A semiring is a combination of a multiplicative operator and an additive monoid. Many common semirings are provided or can be constructed. For instance, the plus-times semiring uses standard addition as the accumulation (monoid) and multiplication as the combination operator – this yields ordinary linear algebra over real numbers. One can also define a \texttt{min-plus} semiring (useful for shortest path algorithms, where "addition" is min and "multiplication" is numeric addition). ALP’s design allows an “almost unlimited variety of operators and types” in semirings.
 
 In code, ALP provides templates to construct these. For example, one can define:
-\begin{lstlisting}
+\begin{lstlisting} [language=C++, basicstyle=\ttfamily\small, showstringspaces=false ]
 using Add = grb::operators::add<double>;
 using AddMonoid = grb::Monoid<Add, grb::identities::zero>;
 using Mul = grb::operators::mul<double>;
@@ -204,7 +204,7 @@ To illustrate ALP usage, let's create a simple C++ program that:
 
 Below is the code for this example, with commentary:
 
-\begin{lstlisting}[caption={Example program using ALP/GraphBLAS primitives in C++}, label=lst:example, showstringspaces=false]
+\begin{lstlisting}[ language=C++, basicstyle=\ttfamily\small, caption={Example program using ALP/GraphBLAS primitives in C++}, label=lst:example, showstringspaces=false]
 
 /*
  * example.cpp - Corrected minimal ALP (GraphBLAS) example.
@@ -391,7 +391,7 @@ This confirms that our ALP operations worked as expected. The code demonstrates 
 
 When you run the example, the program first prints each step of the computation (building the matrix, creating the vector, etc.). In particular, you will see lines like
 
-\begin{lstlisting}
+\begin{lstlisting} [language=bash, basicstyle=\ttfamily\small, showstringspaces=false]
 Step 1: Constructing a 3x3 sparse matrix A.
 Step 2: Creating vector x = [1, 2, 3]^T.
 Step 3: Computing y = A·x under plus‐times semiring.
@@ -420,7 +420,7 @@ one obtains
 \mathrm{dot}(\mathbf{x},\mathbf{x}) \;=\; 14.
 \]
 Hence, immediately after the step‐headings, the console will display something like:
-\begin{lstlisting}
+\begin{lstlisting} [language=bash, basicstyle=\ttfamily\small, showstringspaces=false]
 // Step 4: Computing z = x ⊙ x (element‐wise multiply).
 x = [ 1, 2, 3 ]
 y = A·x = [ 7, 18, 17 ]
@@ -466,7 +466,7 @@ Here we specify the include path for ALP headers and link with the ALP GraphBLAS
 
 If you are using CMake for your own project, you can integrate ALP as follows. There may not be an official CMake package for ALP, but you can use \texttt{find\_library} or hard-code the path. For instance, in your \texttt{CMakeLists.txt}:
 
-\begin{lstlisting}
+\begin{lstlisting}[caption={Example CMakeLists.txt for an ALP project}]
     cmake_minimum_required(VERSION 3.13)
     project(ALPExample CXX)
     find_package(OpenMP REQUIRED) # find OpenMP for -fopenmp
