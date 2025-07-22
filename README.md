@@ -4,8 +4,6 @@
 
 The [pdf](https://algebraic-programming.github.io/ALP-Tutorial/main.pdf) and [html](https://algebraic-programming.github.io/ALP-Tutorial/html/main.html) versions are available online.
 
-... ( README content ) ...
-
 ## License
 
 This project is licensed under the [Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License](LICENSE).
