@@ -22,22 +22,61 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  build_pdf: # New job for PDF compilation
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Compile LaTeX to PDF
+      uses: xu-cheng/latex-action@v3
+      with:
+        root_file: main.tex
+
+    - name: Upload PDF artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: latex-pdf-output
+        path: main.pdf # Assuming main.pdf is in the root after compilation
+
   # Single deploy job since we're just deploying
   deploy:
+    needs: [build_pdf]
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
+        permissions:
+        pages: write
+        id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          # Upload entire repository
-          path: '.'
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts/ # Downloads both latex-pdf-output and latex-html-output
+
+    - name: Prepare public directory for Pages
+      run: |
+        mkdir public
+        # Move PDF to public/
+        mv artifacts/latex-pdf-output/main.pdf public/
+        # Move HTML files to public/html/
+        # mkdir -p public/html
+        # mv artifacts/latex-html-output/* public/html/
+
+    - name: Setup Pages
+      uses: actions/configure-pages@v5
+
+    - name: Upload Pages artifact
+      uses: actions/upload-pages-artifact@v3
+      with:
+        path: ./public
+
+    - name: Deploy to GitHub Pages
+      id: deployment
+      uses: actions/deploy-pages@v4
