@@ -1,8 +1,8 @@
-\section{Quick Start}
+\section{Quick Start}\label{sec:quick_start}
 
 This section explains how to install ALP on a Linux system and compile a simple example. ALP (Algebraic Programming) provides a C++17 library implementing the GraphBLAS interface for linear-algebra-based computations. To get started quickly:
 
-\subsection*{Installation on Linux}
+\subsection{Installation on Linux}
 
 \begin{enumerate}
 \item Install prerequisites: Ensure you have a C++11 compatible compiler (e.g. \texttt{g++} 4.8.2 or later) with OpenMP support, CMake (>= 3.13) and GNU Make, plus development headers for libNUMA and POSIX threads. 
@@ -46,7 +46,7 @@ $ grbrun ./sp_example
 \end{enumerate}
 After these steps, ALP is installed and you are ready to develop ALP-based programs. In the next sections we introduce core ALP concepts and walk through a simple example program.
 
-\section{Introduction to ALP Concepts}
+\section{Introduction to ALP Concepts}\label{sec:alp_concepts}
 
 ALP exposes a programming model similar to the GraphBLAS standard, using algebraic containers (vectors, matrices, etc.) and algebraic operations on those containers. This section covers the basic data structures, the algebraic structures (semirings) that define how arithmetic is done, and key primitive operations (such as matrix-vector multiply and element-wise operations).
 
@@ -63,7 +63,7 @@ In this snippet, x and y are vectors of type double. The matrix A is declared wi
 
 By default, new vectors/matrices start empty (with no stored elements). You can query properties like length or dimensions via \texttt{grb::size(vector)} for vector length, \texttt{grb::nrows(matrix)} and \texttt{grb::ncols(matrix)} for matrix dimensions, and \texttt{grb::nnz(container)} for the number of stored nonzero elements.
 
-\subsubsection*{Exercise: Allocating Vectors and Matrices in ALP}
+\subsubsection{Exercise: Allocating Vectors and Matrices in ALP}
 
 Write a C++ program that uses ALP to allocate two vectors and one matrix as follows:
 \begin{itemize}
@@ -190,7 +190,7 @@ In the next section, we will put these concepts together in a concrete example.
 
 
 
-\section{Simple Example}
+\section{Simple Example}\label{sec:simple_example}
 
 To illustrate ALP usage, let's create a simple C++ program that:
 \begin{itemize}
@@ -429,7 +429,7 @@ dot(x,x) = 14
 \end{lstlisting}
 
 
-\section{Makefile and CMake Instructions}
+\section{Makefile and CMake Instructions}\label{sec:build_instructions}
 
 Finally, we provide guidance on compiling and running the above example in your own development environment. If you followed the installation steps and used \texttt{grbcxx}, compilation is straightforward. Here we outline two approaches: using the ALP wrapper scripts, and integrating ALP manually via a build system.
 
