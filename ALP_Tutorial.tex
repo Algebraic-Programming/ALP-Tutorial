@@ -138,7 +138,39 @@ Capacity of A: 1000
 Info: grb::finalize (reference) called.
 \end{lstlisting}
 
-\noindent \textbf{Question.} Is overriding the default capacity necessary for all of \texttt{x, y, A}?
+\noindent \textbf{Question.} Is overriding the default capacity necessary for all of \texttt{x, y, A} in the above exercise?
+
+\subsection{Basic Container I/O}
+
+The containers in the C++ Standard Template Library (STL) employ the concept of iterators to ingest and extract data, as well as foresees in primitives for manipulating container contents.
+ALP/GraphBLAS is no different, e.g., providing \texttt{grb::clear(container)} to remove all elements from a container, similar to the clear function defined by STL vectors, sets, et cetera.
+Similarly, \texttt{grb::set(vector,scalar)} sets all elements of a given vector equal to the given scalar, resulting in a full (dense) vector.
+By contrast, \texttt{grb::setElement(vector,scalar,index)} sets only a given element at a given index equal to a given scalar.
+
+\noindent \textbf{Exercise.} Start from a copy of \texttt{alp\_hw.cpp} and modify the \texttt{hello\_world} function to allocate two vectors and a matrix as follows:
+\begin{itemize}
+	\item a \texttt{grb::Vector<bool>} \texttt{x} and \texttt{y} both of length $497$ with capacities $497$ and $1$, respectively;
+	\item a \texttt{grb::Matrix<void>} \texttt{A} of size $497\times497$ and capacity $1\ 721$.
+\end{itemize}
+Then, initialise $y$ with a single value \texttt{true} at index $200$, and initialise $x$ with \texttt{false} everywhere. Print the number of nonzeroes in $x$ and $y$. Once done, after compilation and execution, the output should be alike:
+\begin{lstlisting}
+...
+nonzeroes in x: 497
+nonzeroes in y: 1
+...
+\end{lstlisting}
+
+% TODO describe output iterators and print the contents of $y$
+
+% TODO use output iterators to double-check $x$ has $497$ values and that all those values equal \texttt{false}
+
+% TODO use input iterators to build A from west0497.mtx. Have it print the number of nonzeroes after buildMatrixUnique.
+
+% TODO print the capacity of $y$.
+
+% TODO Download west0497.mtx and run the application
+
+% TODO Bonus question: if this is >1 and looking at the user doc, why is this OK?
 
 \subsection{Semirings and Algebraic Operations}
 
