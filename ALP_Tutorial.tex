@@ -1,50 +1,53 @@
-\section{Quick Start}\label{sec:quick_start}
 
-This section explains how to install ALP on a Linux system and compile a simple example. ALP (Algebraic Programming) provides a C++17 library implementing the GraphBLAS interface for linear-algebra-based computations. To get started quickly:
+\section{Installation on Linux}\label{sec:installation}
 
-\subsection{Installation on Linux}
+This section explains how to install ALP on a Linux system and compile a simple example. To get started:
 
 \begin{enumerate}
-\item Install prerequisites: Ensure you have a C++11 compatible compiler (e.g. \texttt{g++} 4.8.2 or later) with OpenMP support, CMake (>= 3.13) and GNU Make, plus development headers for libNUMA and POSIX threads. 
+\item \textbf{Install prerequisites}. Ensure you have a C++11 compatible compiler (e.g. \texttt{g++} 4.8.2 or later) with OpenMP support, CMake (>= 3.13) and GNU Make, plus development headers for libNUMA and POSIX threads. 
 For example, on Debian/Ubuntu:
 \begin{verbatim}
-sudo apt-get install build-essential libnuma-dev libpthread-stubs0-dev cmake
+sudo apt-get install build-essential libnuma-dev libpthread-stubs0-dev cmake;
+\end{verbatim}
+or, on Red Hat systems (as root):
+\begin{verbatim}
+dnf group install "Development Tools"
+dnf install numactl-devel cmake
 \end{verbatim}
 
-\item Obtain ALP: Download or clone the ALP repository (from the official GitHub). For instance:
+\item \textbf{Obtain ALP}. Download or clone the ALP repository, e.g. from its official GitHub location:
 \begin{verbatim}
 git clone https://github.com/Algebraic-Programming/ALP.git
 \end{verbatim}
-Then enter the repository directory.
 
-\item Build ALP: Create a build directory and invoke the provided bootstrap script to configure the project with CMake, then compile and install:
+\item \textbf{Build ALP}. Create a build directory and invoke the provided bootstrap script to configure the project with CMake, then compile and install:
 \begin{lstlisting}[language=bash]
 $ cd ALP && mkdir build && cd build
 $ ../bootstrap.sh --prefix=../install # configure the build
 $ make -j # compile the ALP library
 $ make install # install to ../install
 \end{lstlisting}
-(You can choose a different installation prefix as needed.)
+(You may choose a different installation prefix as desired.)
 
-\item Set up environment: After installation, activate the ALP environment by sourcing the script setenv in the install directory:
+\item \textbf{Set up environment}. After installation, activate the ALP environment by sourcing the script setenv in the install directory:
 \begin{lstlisting}[language=bash]
 $ source ../install/bin/setenv
 \end{lstlisting}
-This script updates paths to make ALP’s compiler wrapper and libraries available.
+This script updates the shell PATH to make the ALP compiler wrapper accessible, as well as adds the ALP libraries to the applicable standard library paths.
 
-\item Compile an example: ALP provides a compiler wrapper \texttt{grbcxx} to compile programs that use the ALP/GraphBLAS API. This wrapper automatically adds the correct include paths and links against the ALP library and its dependencies. For example, to compile the provided sp.cpp sample:
+\item \textbf{Compile an example}. ALP provides a compiler wrapper \texttt{grbcxx} to compile programs that use the ALP/GraphBLAS API. This wrapper automatically adds the correct include paths and links against the ALP library and its dependencies. For example, to compile the provided sp.cpp sample:
 \begin{lstlisting}[language=bash]
 $ grbcxx ../examples/sp.cpp -o sp_example
 \end{lstlisting}
-By default this produces a sequential program; you can add the option \texttt{-b reference\_omp} to use the OpenMP parallel backend (shared-memory parallelism). The wrapper \texttt{grbcxx} accepts other backends as well (e.g.\ \texttt{-b hybrid} for distributed memory).
+By default this produces a sequential program; you can add the option \texttt{-b reference\_omp} to use the OpenMP parallel backend for shared-memory auto-parallelisation. The wrapper \texttt{grbcxx} accepts other backends as well (e.g.\ \texttt{-b nonblocking} for nonblocking execution on shared-memory parallel systems or \texttt{-b hybrid} for hybrid shared- and distributed-memory execution\footnote{The \texttt{hybrid} backend requires the Lightweight Parallel Foundations, LPF, is installed as an additional dependence; see \url{https://github.com/Algebraic-Programming/LPF/} and/or the main ALP \texttt{README.md}.}).
 
-\item Run the program: Use the provided runner \texttt{grbrun} to execute the compiled binary. For a simple shared-memory program, running with \texttt{grbrun} is similar to using \texttt{./program} directly. For example:
+\item \textbf{Run the program}. Use the provided runner \texttt{grbrun} to execute the compiled binary. For a simple shared-memory program, running with \texttt{grbrun} is similar to using \texttt{./program} directly. For example:
 \begin{lstlisting}[language=bash]
 $ grbrun ./sp_example
 \end{lstlisting}
 (The \texttt{grbrun} tool is more relevant when using distributed backends or controlling the execution environment; for basic usage, the program can also be run directly.)
 \end{enumerate}
-After these steps, ALP is installed and you are ready to develop ALP-based programs. In the next sections we introduce core ALP concepts and walk through a simple example program.
+After these steps, you have installed ALP and have made sure its basic functionalities are functional. In the next sections we introduce core ALP/GraphBLAS concepts and walk through a simple example program.
 
 \section{Introduction to ALP Concepts}\label{sec:alp_concepts}
 

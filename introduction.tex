@@ -1,0 +1,24 @@
+\section{Introduction}\label{sec:introduction}
+
+ALgebraic Programming, or ALP for short, encompasses software technologies that allow programming with explicit algebraic structures combined with their automated parallelisation and optimisation.
+This document is a tutorial to the C++ interface to ALP distributed at \url{https://github.com/Algebraic-Programming/ALP}.
+This framework supports various interfaces, including ALP/GraphBLAS, ALP/Dense, ALP/Pregel, and a so-called \emph{transition path} for sparse linear solvers.
+%The former, ALP/GraphBLAS, is its most mature interface and enables sparse linear algebra over general semirings using standard, sequential C++ code.
+ALP provides mechanisms by which auto-parallelisation of sequential, data-centric, and algebraic C++ programs proceeds, both for shared-memory and distributed-memory parallel systems,
+while automatically applies other optimisations for high performance as well.
+%and enables so-called \emph{nonblocking execution} that automatically and significantly optimises data reuse for shared-memory platforms,
+%resulting in performance that tends to exceeds that of carefully hand-optimised codes,
+%oft-times significantly.
+
+%ALP/Dense concerns an interface for generalised dense linear algebra that aims to lead, in due time, to a unified sparse/dense generalised linear algebraic programming interface.
+%ALP/Pregel provides a vertex-centric programming interface that efficiently simulates the execution of "Think-like-a-vertex (TLAV)" algorithms on top of ALP/GraphBLAS.
+%Finally, the ALP transition paths allow for direct interaction with existing code bases by supporting interfaces that assume standard data structures such as Compressed Row Storage (CRS) for matrices\footnote{CRS is also known as Compressed Sparse Rows (CSR) and a myriad of other names, the oldest of which is the Yale sparse matrix format.}.
+
+This tutorial begins with how to obtain and install ALP.
+It then goes into the ALP/GraphBLAS interface, illustrating the basic concepts and usage of this most mature interface to ALP.
+Next is a tutorial on the transition path for shared-memory parallel sparse linear solvers; ALP transition paths are a key ALP feature that allows for direct integration with pre-existing code-bases by supporting interfaces that assume standard data structures such as Compressed Row Storage (CRS) for sparse matrices\footnote{CRS is also known as Compressed Sparse Rows (CSR) and other names, the oldest of which is the \emph{Yale} sparse matrix format.}.
+Finally, the tutorial closes with how to call pre-defined ALP algorithms and where to find them.
+Beyond Section~\ref{sec:installation}, all sections are designed to be stand-alone, and so users interested in a particular functionality alone can skip forward to the related part of the tutorial.
+
+\clearpage
+
