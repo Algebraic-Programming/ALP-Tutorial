@@ -49,66 +49,86 @@ $ grbrun ./sp_example
 \end{enumerate}
 After these steps, you have installed ALP and have made sure its basic functionalities are functional. In the next sections we introduce core ALP/GraphBLAS concepts and walk through a simple example program.
 
-\section{Introduction to ALP Concepts}\label{sec:alp_concepts}
+\section{ALP/GraphBLAS}\label{sec:alp_concepts}
 
-ALP exposes a programming model similar to the GraphBLAS standard, using algebraic containers (vectors, matrices, etc.) and algebraic operations on those containers. This section covers the basic data structures, the algebraic structures (semirings) that define how arithmetic is done, and key primitive operations (such as matrix-vector multiply and element-wise operations).
+ALP exposes a GraphBLAS interface which separate in three categories: 1) algebraic containers (vectors, matrices, etc.); 2) algebraic structures (binary operators, semrings, etc.); and 3) algebraic operations that take containers and algebraic structures as arguments. This interface was developed in tandem with what became the GraphBLAS C specification, however, is pure C++. All containers, primitives, and algebraic structures are defined in the \texttt{grb} namespace. The ALP user documentation may be useful in course of the exercises. These may be found at: \url{http://albert-jan.yzelman.net/alp/user/}.
 
-\subsection{Vectors and Matrices in ALP}
+Let us first bootstrap our tutorial with a simple \emph{Hello World} example:
 
-The primary container types in ALP are \texttt{grb::Vector<T>} and \texttt{grb::Matrix<T>}, defined in the \texttt{grb} namespace. These are templated on a value type \texttt{T}, which is the type of elements stored. Both vectors and matrices can be sparse, meaning they efficiently represent and operate on mostly-zero data by storing only nonzero elements
-webspace.science.uu.nl
-. For example, one can declare a vector of length 100000 and a 150000$\times$100000 matrix as:
+\begin{lstlisting}[language=c++,morekeywords=constexpr,morekeywords=size_t]
+#include <cstddef>
+#include <cstring>
+
+#include <graphblas.hpp>
+
+#include <assert.h>
+
+constexpr size_t max_fn_size = 255;
+typedef char Filename[ max_fn_size ];
+
+void hello_world( const Filename &in, int &out ) {
+	std::cout << "Hello from " << in << std::endl;
+	out = 0;
+}
+
+int main( int argc, char ** argv ) {
+	// get input
+	Filename fn;
+	(void) std::strncpy( fn, argv[ 0 ], max_fn_size );
+
+	// set up output field
+	int error_code = 100;
+
+	// launch hello world program
+	grb::Launcher< grb::AUTOMATIC > launcher;
+	assert( launcher.exec( &hello_world, fn, error_code, true )
+		== grb::SUCCESS );
+
+	// return with the hello_world error code
+	return error_code;
+}
+\end{lstlisting}
+
+In this code, we have a very simple \texttt{hello\_world} function that takes its own filename as an input argument, prints a hello statement to \texttt{stdout}, and then returns a zero error code.
+ALP uses the concept of a \emph{Launcher} to start ALP programs such as \texttt{hello\_world}, which is examplified in the main function above. This mechanism allows for encapsulation and starting sequences of ALP programs, potentially adaptively based on run-time conditions. The signature of an ALP program always consists of two arguments: the first being program input and the second being program output. The types of both input and output may be any POD type.
+
+Assuming the above is saved as \texttt{alp\_hw.cpp}, it may be compiled and run as follows:
+\begin{lstlisting}[language=bash]
+$ grbcxx alp_hw.cpp
+$ grbrun ./a.out
+Info: grb::init (reference) called.
+Hello from ./a.out
+Info: grb::finalize (reference) called.
+$ 
+\end{lstlisting}
+
+\noindent \textbf{Exercise.} Double-check that you have the expected output from this example, as we will use its framework in the following exercises.
+
+\noindent \textbf{Question.} Why is \texttt{argv[0]} not directly passed as input to \texttt{hello\_world}?
+
+\noindent \textbf{Bonus Question.} Consider the \href{http://albert-jan.yzelman.net/alp/user/classgrb_1_1Launcher.html#af33a2d0ff876594143988613ebaebae7}{programmer reference documentation for the \texttt{grb::Launcher}}, and consider distributed-memory parallel execution in particular. Why is the last argument to \texttt{launcher.exec} \texttt{true}?
+
+
+\subsection{ALP/GraphBLAS Containers}
+
+The primary ALP/GraphBLAS container types are \texttt{grb::Vector<T>} and \texttt{grb::Matrix<T>}. These are templated on a value type \texttt{T}, the type of elements stored. The type \texttt{T} can be any plain-old-data (POD) type, including \texttt{std::pair} or \texttt{std::complex<T>}. Both vectors and matrices can be sparse, meaning they efficiently represent mostly-zero data by storing only nonzero elements. For example, one can declare a vector of length $100\ 000$ and a $150\ 000\times100\ 000$ matrix as:
 \begin{lstlisting}
 grb::Vector<double> x(100000), y(150000);
 grb::Matrix<void> A(150000, 100000);
 \end{lstlisting}
-In this snippet, x and y are vectors of type double. The matrix A is declared with type void, which in ALP means it holds only the pattern of nonzero positions (no numeric values). Typically, one would use a numeric type (e.g. double) for matrix values; a void matrix is a special case where existence of an entry is all that matters (useful for boolean or unweighted graphs).
+In this snippet, \texttt{x} and \texttt{y} are vectors of type \texttt{double}. The matrix \texttt{A} is declared with type \texttt{void}, which signifies it only holds the pattern of nonzero positions and no numeric values. Perhaps more commonly, one would use a numeric type (e.g. \texttt{double}) for holding matrix nonzeroes. A \texttt{void} matrix as in the above example is useful for cases where existence of an entry is all that matters, as e.g.\ for storing Boolean matrices or unweighted graphs.
 
-By default, new vectors/matrices start empty (with no stored elements). You can query properties like length or dimensions via \texttt{grb::size(vector)} for vector length, \texttt{grb::nrows(matrix)} and \texttt{grb::ncols(matrix)} for matrix dimensions, and \texttt{grb::nnz(container)} for the number of stored nonzero elements.
+By default, newly instantiated vectors or matrices are empty, meaning they store no elements. You can query properties like length or dimensions via \texttt{grb::size(vector)} for vector length or \texttt{grb::nrows(matrix)} and \texttt{grb::ncols(matrix)} for matrix dimensions. The number of elements present within a container may be retrieved via \texttt{grb::nnz(container)}. Containers have a maximum capacity on the number of elements they may store; the capacity may be retrieved via \texttt{grb::capacity(container)} and on construction of a container is set to the maximum of its dimensions. For example, the initial capacity of \texttt{x} in the above is $100\ 000$, while that of \texttt{A} is $150\ 000$. The size of a container once initialised is fixed, while the capacity may increase during the lifetime of a container.
 
-\subsubsection{Exercise: Allocating Vectors and Matrices in ALP}
-
-Write a C++ program that uses ALP to allocate two vectors and one matrix as follows:
+\noindent \textbf{Exercise.} Allocate vectors and matrices in ALP as follows:
 \begin{itemize}
   \item A \texttt{grb::Vector<double>} \texttt{x} of length 100, with initial capacity 100.
-  \item A \texttt{grb::Vector<double>} \texttt{y} of length 1000, with initial capacity 100.
-  \item A \texttt{grb::Matrix<double>} \texttt{A} of size $(100 \times 1000)$, with initial capacity 100.
+  \item A \texttt{grb::Vector<double>} \texttt{y} of length 1\ 000, with initial capacity 200.
+  \item A \texttt{grb::Matrix<double>} \texttt{A} of size $(100 \times 1\ 000)$, with initial capacity 100.
 \end{itemize}
-Make sure to include the necessary ALP headers, initialize the ALP context, and set the capacities via \texttt{resize}.
+You may start from a copy of \texttt{alp\_hw.cpp}. Employ \texttt{grb::capacity} to print out the capacities of each of the containers. \textbf{Hint:} refer to the user documentation on how to override the default capacities.
 
-\begin{lstlisting}[language=C++,basicstyle=\ttfamily\small, showstringspaces=false]
-#include <iostream>
-#include <graphblas.hpp>
-
-int main() {
-    // 1) Initialize ALP (using the sequential reference backend)
-    grb::init< grb::reference >();
-
-    // 2) Allocate vector x of length 100
-    grb::Vector< double, grb::reference > x( 100 );
-    grb::resize( x, 100 ); // Set initial capacity of x to 100 nonzeros
-
-    // 3) Allocate vector y of length 1000
-    grb::Vector< double, grb::reference > y( 1000 );
-    grb::resize( y, 100 ); // Set initial capacity of y to 100 nonzeros
-
-    // 4) Allocate matrix A of size 100 x 1000
-    grb::Matrix< double, grb::reference > A( 100, 1000 );
-    grb::resize( A, 100 );  // Set initial capacity of A to 100 nonzeros
-
-    // 5) Print the capacities to verify
-    std::cout << "Capacity of x: " << grb::capacity( x ) << std::endl;
-    std::cout << "Capacity of y: " << grb::capacity( y ) << std::endl;
-    std::cout << "Capacity of A: " << grb::capacity( A ) << std::endl;
-
-    // 6) Finalize ALP
-    grb::finalize();
-    
-    return 0;
-}
-\end{lstlisting}
-
-When you run this program, ALP will print informational messages about initialization and finalization, and you will see lines reporting each container’s capacity. In particular, you should observe output similar to:
+If done correctly, you should observe output similar to:
 
 \begin{lstlisting} [language=bash, basicstyle=\ttfamily\small, showstringspaces=false]
 Info: grb::init (reference) called.
@@ -117,6 +137,8 @@ Capacity of y: 1000
 Capacity of A: 1000
 Info: grb::finalize (reference) called.
 \end{lstlisting}
+
+\noindent \textbf{Question.} Is overriding the default capacity necessary for all of \texttt{x, y, A}?
 
 \subsection{Semirings and Algebraic Operations}
 
