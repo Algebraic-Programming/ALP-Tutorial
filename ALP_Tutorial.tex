@@ -102,7 +102,7 @@ Info: grb::finalize (reference) called.
 $ 
 \end{lstlisting}
 
-\noindent \textbf{Exercise.} Double-check that you have the expected output from this example, as we will use its framework in the following exercises.
+\noindent \textbf{Exercise 1.} Double-check that you have the expected output from this example, as we will use its framework in the following exercises.
 
 \noindent \textbf{Question.} Why is \texttt{argv[0]} not directly passed as input to \texttt{hello\_world}?
 
@@ -120,7 +120,7 @@ In this snippet, \texttt{x} and \texttt{y} are vectors of type \texttt{double}. 
 
 By default, newly instantiated vectors or matrices are empty, meaning they store no elements. You can query properties like length or dimensions via \texttt{grb::size(vector)} for vector length or \texttt{grb::nrows(matrix)} and \texttt{grb::ncols(matrix)} for matrix dimensions. The number of elements present within a container may be retrieved via \texttt{grb::nnz(container)}. Containers have a maximum capacity on the number of elements they may store; the capacity may be retrieved via \texttt{grb::capacity(container)} and on construction of a container is set to the maximum of its dimensions. For example, the initial capacity of \texttt{x} in the above is $100\ 000$, while that of \texttt{A} is $150\ 000$. The size of a container once initialised is fixed, while the capacity may increase during the lifetime of a container.
 
-\noindent \textbf{Exercise.} Allocate vectors and matrices in ALP as follows:
+\noindent \textbf{Exercise 2.} Allocate vectors and matrices in ALP as follows:
 \begin{itemize}
   \item A \texttt{grb::Vector<double>} \texttt{x} of length 100, with initial capacity 100.
   \item A \texttt{grb::Vector<double>} \texttt{y} of length 1\ 000, with initial capacity 200.
@@ -147,10 +147,10 @@ ALP/GraphBLAS is no different, e.g., providing \texttt{grb::clear(container)} to
 Similarly, \texttt{grb::set(vector,scalar)} sets all elements of a given vector equal to the given scalar, resulting in a full (dense) vector.
 By contrast, \texttt{grb::setElement(vector,scalar,index)} sets only a given element at a given index equal to a given scalar.
 
-\noindent \textbf{Exercise.} Start from a copy of \texttt{alp\_hw.cpp} and modify the \texttt{hello\_world} function to allocate two vectors and a matrix as follows:
+\noindent \textbf{Exercise 3.} Start from a copy of \texttt{alp\_hw.cpp} and modify the \texttt{hello\_world} function to allocate two vectors and a matrix as follows:
 \begin{itemize}
 	\item a \texttt{grb::Vector<bool>} \texttt{x} and \texttt{y} both of length $497$ with capacities $497$ and $1$, respectively;
-	\item a \texttt{grb::Matrix<void>} \texttt{A} of size $497\times497$ and capacity $1\ 721$.
+	\item a \texttt{grb::Matrix<void>} \texttt{A} of size $497\times497$ and capacity $1\ 727$.
 \end{itemize}
 Then, initialise $y$ with a single value \texttt{true} at index $200$, and initialise $x$ with \texttt{false} everywhere. Print the number of nonzeroes in $x$ and $y$. Once done, after compilation and execution, the output should be alike:
 \begin{lstlisting}
@@ -160,17 +160,57 @@ nonzeroes in y: 1
 ...
 \end{lstlisting}
 
-% TODO describe output iterators and print the contents of $y$
+\noindent \textbf{Bonus question.} Print the capacity of $y$. Should the value returned be unexpected, considering the specification in the user documentation, is this a bug in ALP?
 
-% TODO use output iterators to double-check $x$ has $497$ values and that all those values equal \texttt{false}
+ALP/GraphBLAS containers are compatible with standard STL output iterators. For example, the following for-loop prints all entries of $y$:
+\begin{lstlisting}
+for( const auto &pair : y ) {
+	std::cout << "y[ " << pair.first << " ] = " << pair.second << "\n";
+}
+\end{lstlisting}
 
-% TODO use input iterators to build A from west0497.mtx. Have it print the number of nonzeroes after buildMatrixUnique.
+\noindent \textbf{Exercise 4.} Use output iterators to double-check that $x$ has $497$ values and that all those values equal \texttt{false}.
 
-% TODO print the capacity of $y$.
+Commonly, matrices are available in common file exchange formats, such as MatrixMarket \texttt{.mtx}. To facilitate working with standard files, ALP contains utilities for reading standard format. The utilities are not included with \texttt{graphblas.hpp} and must instead be included explicitly:
+\begin{lstlisting}
+#include <graphblas/utils/parser.hpp>
+\end{lstlisting}
+Including the above parser utility defines the \texttt{MatrixFileReader} class. Its constructor takes one filename plus a Boolean that describes whether vertex are numbered consecutively (as required in the case of MatrixMarket files); some graph repositories, e.g. SNAP, have non consecutively-numbered vertices which could be an artifact of how the data is constructed or due to post-processing. In this case, passing \texttt{false} as the second argument to the parser will map the non-consecutive vertex IDs to a consecutive range instead, thus packing the graph structure in a minimally-sized sparse matrix. In this tutorial, however, we stick to MatrixMarket files and therefore always pass \texttt{true}:
+\begin{lstlisting}
+grb::utils::MatrixFileReader< double > parser( in, true );
+\end{lstlisting}
+After instantiation, the parser defines STL-compatible iterators that are enriched for use with sparse matrices; e.g., one may issue
+\begin{lstlisting}
+const auto iterator = parser.begin();
+std::cout << "First parsed entry: ( " << iterator.i() << ", " << iterator.j() << " ) = " << iterator.v() << "\n";
+\end{lstlisting}
+which should print, on execution,
+\begin{lstlisting}
+First parsed entry: ( 495, 496 ) = 0.897354
+\end{lstlisting}
+Note that the template argument to \texttt{MatrixFileReader} defines the value type of the sparse matrix nonzero values. The start-end iterator pair from this parser is compatible with the \texttt{grb::buildMatrixUnique} ALP/GraphBLAS primitive, where the suffix -unique indicates that the iterator pair should never iterate over a nonzero at the same matrix position $(i,j)$ more than once. Hence reading in the matrix into the ALP/GraphBLAS container $A$ proceeds simply as
+\begin{lstlisting}
+grb::RC rc = grb::buildMatrixUnique(
+    A,
+    parser.begin( grb::SEQUENTIAL ), parser.end( grb::SEQUENTIAL ),
+    grb::SEQUENTIAL
+);
+assert( rc == grb::SUCCESS );
+\end{lstlisting}
+The type \texttt{grb::RC} is the standard return type; ALP primitives\footnote{that are not simple `getters' like \texttt{grb::nnz}} always return an error code, and, if no error is encountered, return \texttt{grb::SUCCESS}. Iterators in ALP may be either \emph{sequential} or \emph{parallel}. Sequential iterators mean a start-end iterator pair such as retrieved from the parser in the above snippet, iterate over all elements of the underlying container (in this case, all nonzeroes in the sparse matrix file). A parallel iterator, however, only retrieves some subset of nonzeroes $V_s$, where $s$ is the process ID and there are a total of $p$ subsets $V_i$, where $p$ is the total number of processes. These subsets are pairwise disjoint, while the union over all $V_i$ corresponds to all elements in the underlying container. Parallel iterators are useful e.g.\ when launching an ALP/GraphBLAS program using multiple processes to benefit from distributed-memory parallelism; in such cases, it would be wasteful if every process iterates over all data elements on data ingestion-- instead, parallel I/O is commonly preferred. In the above snippet, the primitive for building the matrix must be aware of which type of iterator pair is given, and hence the last argument repeats that the iterators passed are, indeed, sequential iterators.
 
-% TODO Download west0497.mtx and run the application
-
-% TODO Bonus question: if this is >1 and looking at the user doc, why is this OK?
+\textbf{Exercise 5.} Use input iterators to build A from west0497.mtx. Have it print the number of nonzeroes in $A$ after buildMatrixUnique. Then modify the \texttt{main} function to take as the first program argument a path to a .mtx file, pass that path to the ALP/GraphBLAS program. Then find and download the west0497 matrix from the SuiteSparse matrix collection, and run the application. If all went well, the output should be something like:
+\begin{lstlisting}
+Info: grb::init (reference) called.
+elements in x: 497
+elements in y: 1
+y[ 200 ] = 1
+Info: MatrixMarket file detected. Header line: ``%%MatrixMarket matrix coordinate real general''
+Info: MatrixFileReader constructed for /home/yzelman/Documents/datasets/graphs-and-matrices/west0497.mtx: an 497 times 497 matrix holding 1727 entries. Type is MatrixMarket and the input is general.
+First parsed entry: ( 495, 496 ) = 0.897354
+nonzeroes in A: 1727
+Info: grb::finalize (reference) called.
+\end{lstlisting}
 
 \subsection{Semirings and Algebraic Operations}
 
