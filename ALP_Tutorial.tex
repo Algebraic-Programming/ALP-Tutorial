@@ -122,9 +122,10 @@ By default, newly instantiated vectors or matrices are empty, meaning they store
 
 \noindent \textbf{Exercise 2.} Allocate vectors and matrices in ALP as follows:
 \begin{itemize}
-  \item A \texttt{grb::Vector<double>} \texttt{x} of length 100, with initial capacity 100.
-  \item A \texttt{grb::Vector<double>} \texttt{y} of length 1\ 000, with initial capacity 200.
-  \item A \texttt{grb::Matrix<double>} \texttt{A} of size $(100 \times 1\ 000)$, with initial capacity 100.
+  \item a \texttt{grb::Vector<double>} \texttt{x} of length 100, with initial capacity 100;
+  \item a \texttt{grb::Vector<double>} \texttt{y} of length 1\ 000, with initial capacity 1\ 000;
+  \item a \texttt{grb::Matrix<double>} \texttt{A} of size $(100 \times 1\ 000)$, with initial capacity 1\ 000; and
+  \item a \texttt{grb::Matrix<double>} \texttt{A} of size $(100 \times 1\ 000)$, with initial capacity 5\ 000.
 \end{itemize}
 You may start from a copy of \texttt{alp\_hw.cpp}. Employ \texttt{grb::capacity} to print out the capacities of each of the containers. \textbf{Hint:} refer to the user documentation on how to override the default capacities.
 
@@ -135,6 +136,7 @@ Info: grb::init (reference) called.
 Capacity of x: 100
 Capacity of y: 1000
 Capacity of A: 1000
+Capacity of B: 5000
 Info: grb::finalize (reference) called.
 \end{lstlisting}
 
@@ -197,10 +199,10 @@ grb::RC rc = grb::buildMatrixUnique(
 );
 assert( rc == grb::SUCCESS );
 \end{lstlisting}
-The type \texttt{grb::RC} is the standard return type; ALP primitives\footnote{that are not simple `getters' like \texttt{grb::nnz}} always return an error code, and, if no error is encountered, return \texttt{grb::SUCCESS}. Iterators in ALP may be either \emph{sequential} or \emph{parallel}. Sequential iterators mean a start-end iterator pair such as retrieved from the parser in the above snippet, iterate over all elements of the underlying container (in this case, all nonzeroes in the sparse matrix file). A parallel iterator, however, only retrieves some subset of nonzeroes $V_s$, where $s$ is the process ID and there are a total of $p$ subsets $V_i$, where $p$ is the total number of processes. These subsets are pairwise disjoint, while the union over all $V_i$ corresponds to all elements in the underlying container. Parallel iterators are useful e.g.\ when launching an ALP/GraphBLAS program using multiple processes to benefit from distributed-memory parallelism; in such cases, it would be wasteful if every process iterates over all data elements on data ingestion-- instead, parallel I/O is commonly preferred. In the above snippet, the primitive for building the matrix must be aware of which type of iterator pair is given, and hence the last argument repeats that the iterators passed are, indeed, sequential iterators.
+The type \texttt{grb::RC} is the standard return type; ALP primitives\footnote{that are not simple `getters' like \texttt{grb::nnz}} always return an error code, and, if no error is encountered, return \texttt{grb::SUCCESS}. Iterators in ALP may be either \emph{sequential} or \emph{parallel}. Start-end iterator pairs that are sequential, such as retrieved from the parser in the above snippet, iterate over all elements of the underlying container (in this case, all nonzeroes in the sparse matrix file). A parallel iterator, by contrast, only retrieves some subset of elements $V_s$, where $s$ is the process ID. It assumes that there are a total of $p$ subsets $V_i$, where $p$ is the total number of processes. These subsets are pairwise disjoint (i.e., $V_i\cap V_j=\emptyset$ for all $i\neq j, 0\leq i,j<p$), while $\cup V_i$ corresponds to all elements in the underlying container. Parallel iterators are useful when launching an ALP/GraphBLAS program with multiple processes to benefit from distributed-memory parallelisation; in such cases, it would be wasteful if every process iterates over all data elements on data ingestion-- instead, parallel I/O is preferred. ALP primitives that take iterator pairs as input must be aware of the I/O type, which is passed as the last argument to \texttt{grb::buildMatrixUnique} in the above code snippet.
 
-\textbf{Exercise 5.} Use input iterators to build A from west0497.mtx. Have it print the number of nonzeroes in $A$ after buildMatrixUnique. Then modify the \texttt{main} function to take as the first program argument a path to a .mtx file, pass that path to the ALP/GraphBLAS program. Then find and download the west0497 matrix from the SuiteSparse matrix collection, and run the application. If all went well, the output should be something like:
-\begin{lstlisting}
+\textbf{Exercise 5.} Use the \texttt{FileMatrixParser} and its iterators to build $A$ from \texttt{west0497.mtx}. Have it print the number of nonzeroes in $A$ after buildMatrixUnique. Then modify the \texttt{main} function to take as the first program argument a path to a .mtx file, pass that path to the ALP/GraphBLAS program. Find and download the west0497 matrix from the SuiteSparse matrix collection, and run the application with the path to the downloaded matrix. If all went well, its output should be something like:
+\begin{lstlisting}[keywordstyle=\ttfamily]
 Info: grb::init (reference) called.
 elements in x: 497
 elements in y: 1
