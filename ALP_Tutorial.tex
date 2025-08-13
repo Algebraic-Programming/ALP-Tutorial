@@ -201,7 +201,7 @@ assert( rc == grb::SUCCESS );
 \end{lstlisting}
 The type \texttt{grb::RC} is the standard return type; ALP primitives\footnote{that are not simple `getters' like \texttt{grb::nnz}} always return an error code, and, if no error is encountered, return \texttt{grb::SUCCESS}. Iterators in ALP may be either \emph{sequential} or \emph{parallel}. Start-end iterator pairs that are sequential, such as retrieved from the parser in the above snippet, iterate over all elements of the underlying container (in this case, all nonzeroes in the sparse matrix file). A parallel iterator, by contrast, only retrieves some subset of elements $V_s$, where $s$ is the process ID. It assumes that there are a total of $p$ subsets $V_i$, where $p$ is the total number of processes. These subsets are pairwise disjoint (i.e., $V_i\cap V_j=\emptyset$ for all $i\neq j, 0\leq i,j<p$), while $\cup V_i$ corresponds to all elements in the underlying container. Parallel iterators are useful when launching an ALP/GraphBLAS program with multiple processes to benefit from distributed-memory parallelisation; in such cases, it would be wasteful if every process iterates over all data elements on data ingestion-- instead, parallel I/O is preferred. ALP primitives that take iterator pairs as input must be aware of the I/O type, which is passed as the last argument to \texttt{grb::buildMatrixUnique} in the above code snippet.
 
-\textbf{Exercise 5.} Use the \texttt{FileMatrixParser} and its iterators to build $A$ from \texttt{west0497.mtx}. Have it print the number of nonzeroes in $A$ after buildMatrixUnique. Then modify the \texttt{main} function to take as the first program argument a path to a .mtx file, pass that path to the ALP/GraphBLAS program. Find and download the west0497 matrix from the SuiteSparse matrix collection, and run the application with the path to the downloaded matrix. If all went well, its output should be something like:
+\noindent \textbf{Exercise 5.} Use the \texttt{FileMatrixParser} and its iterators to build $A$ from \texttt{west0497.mtx}. Have it print the number of nonzeroes in $A$ after buildMatrixUnique. Then modify the \texttt{main} function to take as the first program argument a path to a .mtx file, pass that path to the ALP/GraphBLAS program. Find and download the west0497 matrix from the SuiteSparse matrix collection, and run the application with the path to the downloaded matrix. If all went well, its output should be something like:
 \begin{lstlisting}[keywordstyle=\ttfamily]
 Info: grb::init (reference) called.
 elements in x: 497
@@ -213,6 +213,50 @@ First parsed entry: ( 495, 496 ) = 0.897354
 nonzeroes in A: 1727
 Info: grb::finalize (reference) called.
 \end{lstlisting}
+
+\noindent \textbf{Bonus question.} Why is there no \texttt{grb::set(matrix,scalar)} primitive?
+
+\subsection{Copying, Masking, and Standard Matrices}
+
+Continuing from the last exercise, the following code would store a copy of $y$ in $x$ and a copy of $A$ in $B$:
+\begin{lstlisting}
+grb::Matrix< double > B( 497, 497 );
+assert( grb::capacity( B ) == 497 );
+grb::RC rc = grb::set( x, y );
+rc = rc ? rc : grb::set( B, A, grb::RESIZE );
+rc = rc ? rc : grb::set( B, A, grb::EXECUTE );
+\end{lstlisting}
+\noindent \textbf{Question.} What does the code pattern \texttt{rc = rc ? rc : <function call>;} achieve?
+
+Note that after instantiation of $B$ (line 1 in the above) it will be allocated with a default capacity of $497$ values maximum (line 2). However, $A$ from the preceding exercise has $1\ 727$ values; therefore, simply executing \texttt{grb::set( B, A )} would return \texttt{grb::ILLEGAL}. Rather than manually having to call \texttt{grb::resize( B, 1727 )} to make the copy work, the above snippet instead first requests ALP/GraphBLAS to figure out the required capacity of $B$ and resize it if necessary (line 4), before then executing the copy (line 5). The execute phase is default-- i.e., the last line could equivalently have read \texttt{rc = rc ? rc : grb::set( B, A );}. Similarly, the vector copy (line 3) could have been broken up in resize-execute phases, however, from the previous exercises we already learned that the default vector capacity guarantees are sufficient to store $y$ and so we call the execute phase immediately.
+
+\noindent \textbf{Question.} $A$ contains $1727$ double-precision elements. Are these $1727$ nonzeroes?
+
+The \texttt{grb::set} primitive may also take a mask argument. The mask determines which outputs are computed and which outputs are discarded. For example, recall that $y$ from the previous exercise is a vector of size $497$ that contains only one value $y_{200}=$\texttt{true}. Then
+\begin{lstlisting}
+grb::RC rc = grb::set( x, y, false );
+\end{lstlisting}
+results in a vector $x$ that has one entry only: $x_{200}=\texttt{false}$. This is because $y$ has no elements anywhere except at position $200$, and hence the mask evaluates \texttt{false} for any $0\leq i<497, i\neq200$, and no entries are generated by the primitive at those positions. At position $200$, however, the mask $y$ does contain an element whose value is \texttt{true}, and hence the \texttt{grb::set} primitive will generate an output entry there. The value of the entry $x_{200}$ is set to the value given to the primitive, which is \texttt{false}. All GraphBLAS primitives with an output container can take mask arguments.
+
+\noindent \textbf{Question.} What would \texttt{grb::set( y, x, true )} return for $y$, assuming it is computed immediately after the preceding code snippet?
+
+We have shown how matrices may be built from input iterators while similarly, vectors may be built from standard iterators through \texttt{grb::buildVectorUnique} as well. Iterator-based ingestion also allows for the construction of vectors and matrices that have regular structures. ALP/GraphBLAS comes with some standard recipes that exploit this, for example to build an $n\times n$ identity matrix:
+\begin{lstlisting}
+...
+#include <graphblas/algorithms/matrix_factory.hpp>
+...
+
+    const grb::Matrix< double > identity = grb::algorithms::matrices< double >::identity( n );
+
+...
+\end{lstlisting}
+\href{http://albert-jan.yzelman.net/alp/v0.8-preview/classgrb_1_1algorithms_1_1matrices.html#a1336accbaf6a61ebd890bef9da4116fc}{Other regular patterns supported} are \emph{eye} (similar to identity but not required to be a square matrix) and \emph{diag} (which takes an optional parameter $k$ to generate offset the diagonal, e.g., to generate a superdiagonal matrix). The class includes a set of constructors that result in dense matrices as well, including \emph{dense}, \emph{full}, \emph{zeros}, and \emph{ones}; note, however, that ALP/GraphBLAS is not optimised to handle dense matrices efficiently and so their use is discouraged\footnote{for similar reasons, actually, there is no primitive \texttt{grb::set(matrix,scalar)} in the GraphBLAS API}. While constructing matrices from standard file formats and through general iterators hence are key features for usability, it is also possible to derive matrices from existing ones via \texttt{grb::set(matrix,mask,value)}.
+
+\noindent \textbf{Exercise 6.} Copy the code from the previous exercise, and modify it to determine whether $A$ holds explicit zeroes; i.e., entries in $A$ that have numerical value zero. \textbf{Hint:} it is possible to complete this exercise using only masking and copiying. For bonus points, consider making use of the \texttt{grb::descriptors::invert\_mask} descriptor described \href{http://albert-jan.yzelman.net/alp/v0.8-preview/namespacegrb_1_1descriptors.html}{here}.
+
+\noindent \textbf{Exercise 7.} Determine how many explicit zeroes exist on the diagonal, superdiagonal, and subdiagonal of $A$; i.e., compute $|\{A_{ij}\ |\ A_{ij}=0, |i-j|\leq1, 0\leq i,j<497\}|$.
+
+\noindent \textbf{Bonus question.} How much memory beyond that which is required to store the $n\times n$ identity matrix will a call to \texttt{matrices< double >::identity( n )} consume? \textbf{Hint:} consider that the iterators passed to \texttt{buildMatrixUnique} iterate over regular index sequences that can easily be systematically enumerated.
 
 \subsection{Semirings and Algebraic Operations}
 
