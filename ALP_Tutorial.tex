@@ -258,6 +258,69 @@ We have shown how matrices may be built from input iterators while similarly, ve
 
 \noindent \textbf{Bonus question.} How much memory beyond that which is required to store the $n\times n$ identity matrix will a call to \texttt{matrices< double >::identity( n )} consume? \textbf{Hint:} consider that the iterators passed to \texttt{buildMatrixUnique} iterate over regular index sequences that can easily be systematically enumerated.
 
+\subsection{Numerical Linear Algebra}
+
+GraphBLAS, as the name implies, provides canonical BLAS-like functionalities on sparse matrices, sparse vectors, and dense vectors. These include \texttt{grb::dot}, \texttt{grb::eWiseAdd}, \texttt{grb::eWiseMul}, \texttt{grb::mxv}, \texttt{grb::vxm}, and \texttt{grb::mxm}. The former three scalar/vector primitives are dubbed \emph{level 1}, the following two matrix--vector primitives \emph{level 2}, and the latter matrix--matrix primitive \emph{level 3}. Their functionalities are summarised as follows:\newline
+
+      \textbf{grb::dot} – Compute the dot product of two vectors, $\alpha$\textit{+=}$u^Tv$ or $\alpha$\textit{+=}$\sum_i (u_i \times v_i)$, in essence combining element-wise multiplication with a reduction. The output $\alpha$ is a scalar, usually a primitive type such as \texttt{double}. Unlike the out-of-place \texttt{grb::set}, the \texttt{grb::dot} updates the output scalar in-place.\newline
+
+	\textbf{grb::eWiseMul, grb::eWiseAdd} - These primitives combine two containers element-by-element, the former using element-wise multiplication, and the latter using element-wise addition. Different from \texttt{grb::set}, these primitives are in-place, meaning the result of the element-wise operations are added to any elements already in the output container; i.e., \texttt{grb::eWiseMul} computes $z$\textit{+=}$x\odot y$, where $\odot$ denotes element-wise multiplication. In case of sparse vectors and an initially-empty output container, the primitives separate themselves in terms of the structure of the output vector, which is composed either of an intersection or union of the input structures.
+\begin{itemize}
+  \item \textbf{intersection (eWiseMul):} The primitive will compute only an element-wise multiplication for those positions where \emph{both} input containers have entries. This is since any missing entries are assumed to have value zero, and are therefore ignored under multiplication.
+  \item \textbf{union (eWiseAdd):} The primitive will compute element-wise addition for those positions where \emph{any} of the input containers have entries. This is again because a missing entry in one of the containers is assumed to have a zero value, meaning the result of the addition simply equals the value of the entry present in the other container.
+\end{itemize}
+
+    \textbf{grb::mxv}, \textbf{grb::vxm} - Performs right- and left-handed matrix--vector multiplication; i.e., $u$\textit{+=}$Av$ and $u$\textit{+=}$vA$, respectively. More precisely, e.g., \texttt{grb::mxv} computes the standard linear algebraic operation $u_i = u_i + \sum_j A_{ij} v_j$. Different from \texttt{grb::set}, the \texttt{grb::mxv} is an in-place operation. If the intent is to compute $u=Av$ while $u$ is not empty, there are two solutions: 1) $u$ may cleared first (\texttt{grb::clear(u)}), or 2) $u$ may have all its values set to zero first (\texttt{grb::set(u, 0)}).\newline
+
+    \textbf{grb::mxm} - Performs matrix--matrix multiplication; i.e., $C$\textit{+=}$AB$, or $C_{ij}=C_{ij}\textit{+=}\sum_{k}A_{ik}B_{kj}$. If, for a given $i,j$ the $i$th row of $A$ is empty or the $j$th column of $B$ is empty, no output will be appended to $C$-- that is, if $C_{ij}\notin C$, then after executing the primitive no such entry will have been added to $C$, meaning that the sparsity of $C$ is retained and the only fill-in to $C$ is due to non-zero contributions of $AB$. If in-place behaviour is not desired, $C$ must be cleared prior to calling this primitive\footnote{note that while setting $C$ to a dense matrix of all zeroes semantically also results in an out-of-place matrix--matrix multiplication, typically GraphBLAS applications should shy away from forming dense matrices due to their quadratic storage requirements}.\newline
+
+    With all the above operations, the containers must have matching dimensions in the linear algebraic sense -- e.g., for $u=Av$, $u$ must have size equal to the number of rows in $A$ while $v$ must have size equal to the number of columns. If the sizes do not match, the related primitives will return \texttt{grb::MISMATCH}. Similarly, if for an output container the result cannot be stored due to insufficient capacity, \texttt{grb::ILLEGAL} will be returned. As with \texttt{grb:set}, furthermore, all above primitives may optionally take a mask as well as take a phase (resize or execute) as its last argument.
+
+    There is one final caveat. In order to support graph algorithms, GraphBLAS provides on \emph{generalised} linear algebraic primitives -- not just numerical linear algebraic ones. This is explained further in the next subsection of this tutorial. For now, the only thing this necessitates is that each of the primitives explained above takes a mandatory \emph{semiring} argument. To perform standard numerical linear algebra, this last argument must be an instance of \texttt{grb::semirings::plusTimes< T >}, where $T$ is the domain over which we wish to perform numerical linear algebra (usually \texttt{double} or \texttt{std::complex< double >}). For example, to perform a sparse matrix--vector multiplication:
+\begin{lstlisting}
+auto plusTimes = grb::semirings::plusTimes< double >();
+grb::RC rc = grb::clear( y );
+rc = rc ? rc : grb::mxv(y, A, x, plusTimes);
+\end{lstlisting}
+
+\noindent \textbf{Exercise 8.} Copy the older \texttt{alp\_hw.cpp} to start with this exercise. Modify it to perform the following steps:
+\begin{enumerate}
+\item initialise a small matrix $A$ and vector $x$;
+\item use \texttt{grb::set} and \texttt{grb::setElement} to assign values (see below for a suggestion);
+\item perform a matrix--vector multiplication $y = Ax$ (using \texttt{grb::mxv} with the plus-times semiring);
+\item compute a dot product $d = x^Tx$ (using \texttt{grb::dot} with the same semiring);
+\item perform an element-wise multiplication $z = x \odot x$ (using \texttt{grb::eWiseMul} with the same semiring); and
+\item print the results.
+\end{enumerate}
+One example $A, x$ could be:
+\[
+A = 
+\begin{bmatrix}
+0 & 1 & 2 \\
+0 & 3 & 4 \\
+5 & 6 & 0
+\end{bmatrix},\quad
+\mathbf{x} = \begin{bmatrix}1\\2\\3\end{bmatrix},
+\]
+for which, if the exercise is implemented OK, the output would be something like:
+\begin{lstlisting} [language=bash, basicstyle=\ttfamily\small, showstringspaces=false]
+Step 1: Constructing a 3x3 sparse matrix A.
+Step 2: Creating vector x = [1, 2, 3]^T.
+Step 3: Computing y = A·x under plus‐times semiring.
+Step 4: Computing z = x ⊙ x (element‐wise multiply).
+Step 5: Computing dot_val = xᵀ·x under plus‐times semiring.
+x = [ 1, 2, 3 ]
+y = A·x = [ 7, 18, 17 ]
+z = x ⊙ x = [ 1, 4, 9 ]
+dot(x,x) = 14
+\end{lstlisting}
+
+\noindent \textbf{Question.} If setting all $n$ elements of a size-$n$ vector via \texttt{grb::setElement}, what is its big-Omega (lower-bound asymptotic) complexity? Is the resulting complexity reasonable for a shared-memory parallel program?
+
+\noindent \textbf{Bonus question.} If instead those $n$ elements are in some STL-type container for which we retrieve random access iterators, and ingest those elements using \texttt{grb::buildVectorUnique} and those random access iterators -- what would a good shared-memory parallel ALP/GraphBLAS implementation achieve in terms of complexity\footnote{if derived correctly, this bound is indeed achieved for the shared-memory parallel ALP/GraphBLAS backends that may be invoked and tested by passing \texttt{-b reference\_omp} and \texttt{-b nonblocking} to \texttt{grbcxx}}?
+
+From these questions it follows that \texttt{grb::setElement} should only ever be used to set $\Theta(1)$ elements in some container and never asymptotically more than that. If a larger data set needs to be ingested into ALP containers, then in order to guarantee scalability, always rely on (parallel) iterators and the \texttt{grb::build*} primitives!
+
 \subsection{Semirings and Algebraic Operations}
 
 A key feature of GraphBLAS (and ALP) is that operations are defined over semirings rather than just the conventional arithmetic operations. A semiring consists of a pair of operations (an “addition” and a “multiplication”) along with their identity elements, which generalize the standard arithmetic (+ and $\times$). GraphBLAS allows using different semirings to, for example, perform computations like shortest paths or logical operations by substituting the plus or times operations with min, max, logical OR/AND, etc. In GraphBLAS, matrix multiplication is defined in terms of a semiring: the “add” operation is used to accumulate results, and the “multiply” operation is used when combining elements.
@@ -300,52 +363,23 @@ Using the above containers and semirings, ALP provides a set of primitive functi
     \textbf{grb::mxv} – Perform matrix-vector multiplication on a semiring. The call \texttt{grb::mxv(u, A, v, semiring)} computes $u = A \otimes v$ (where $\otimes$ denotes matrix-vector multiply under the given semiring). For the plus-times semiring, this corresponds to the usual linear algebra operation $u_i = \sum_j A_{ij} \times v_j$ (summing with + and multiplying with $\times$). The output vector \texttt{u} must be pre-allocated to the correct size (number of rows of $A$). By default, ALP’s \texttt{mxv} adds into the output vector (as if doing $u += A \times v$). If you want to overwrite \texttt{u} instead of accumulate, you may need to explicitly set \texttt{u} to the identity element (e.g. zero) beforehand or use descriptors (advanced options) – but for most use cases, initializing $u$ to 0 and then calling mxv is sufficient to compute $u = A x$. For example, \texttt{grb::mxv(y, A, x, plusTimesSemiring)} will compute $y_i = \sum_j A_{ij} x_j$ using standard arithmetic (assuming \texttt{y} was zeroed initially).
 \newline
 
-
-        \textbf{grb::eWiseMul / grb::eWiseAdd} (element-wise operations): These functions combine two containers element-by-element. For instance, \texttt{grb::eWiseApply(z, x, y, op)} will apply the binary operator \texttt{op} to each pair of elements $x_i, y_i$ that exist (with matching index $i$), storing the result in $z_i$.
-
-\begin{itemize}
-  \item \textbf{Intersection (eWiseMul):} If you use a plain binary operator (not a monoid) like multiplication or min, the result will include only entries where \emph{both} input containers have entries. Essentially, missing values are ignored. For example:
-  \begin{itemize}
-    \item \texttt{grb::eWiseApply(z, x, x, grb::operators::min<double>())} sets $z_i = \min(x_i, x_i) = x_i$ for all indices $i$ where $x_i$ exists.
-  \end{itemize}
-
-  \item \textbf{Union (eWiseAdd):} If you provide a \emph{monoid} (which defines an identity), ALP will treat missing elements as identity values and operate over the union of indices. For example:
-  \begin{itemize}
-    \item If $y$ has a value at index $k$ that $x$ does not, \texttt{grb::eWiseApply(z, x, y, addMonoid)} yields $z_k = x_k + y_k = 0 + y_k = y_k$, where 0 is the identity of addition.
-  \end{itemize}
-  Using an additive monoid results in an element-wise sum (union), while using a multiplicative operator gives an element-wise product (intersection).
-\end{itemize}
-
-    In summary, to do element-wise multiplication (intersection), you might call:
-    \texttt{grb::eWiseApply(z, x, y, grb::operators::mul<double>())},
-    which computes $z_i = x_i \times y_i$ for each $i$ that has both $x_i$ and $y_i$. To do an element-wise addition (union), you could call
-    \texttt{grb::eWiseApply(z, x, y, addMonoid)}, where \texttt{addMonoid} encapsulates “+” with identity 0, resulting in $z_i = x_i + y_i$ for all indices that exist in either $x$ or $y$. (If an index is missing in one operand, that operand contributes 0.)
-\newline
-
       \textbf{grb::dot} – Compute the dot product of two vectors. This is essentially a special case of a matrix-vector multiply or a reduce operation. ALP provides \texttt{grb::dot(result, u, v, semiring)} to compute a scalar result = $u^T \otimes v$ under a given semiring. For the standard plus-times semiring, \texttt{grb::dot(alpha, u, v, plusTimesSemiring)} will calculate $\alpha = \sum_i (u_i \times v_i)$ (i.e. the dot product of $u$ and $v$). If you use a different monoid or operator, you can compute other pairwise reductions (for example, using a \texttt{min} monoid with logical multiplication could compute something like an “AND over all i” if that were needed). In most cases, you'll use dot with the default arithmetic semiring for inner products. The output \texttt{alpha} is a scalar (primitive type) passed by reference, which will be set to the resulting value.
 \newline
 
       \textbf{grb::apply} – Apply a unary operator or indexed operation to each element of a container. The function \texttt{grb::apply(z, x, op)} applies a given unary functor \texttt{op} to each element of vector (or matrix) \texttt{x}, writing the result into \texttt{z}. For example, if \texttt{op} is a functor that squares a number, \texttt{grb::apply(z, x, op)} would produce $z_i = \textit{op}(x_i)$ for all stored elements of $x$. There are also forms of \texttt{apply} that use a binary operator with a scalar, effectively applying an affine operation. For instance, ALP could support \texttt{grb::apply(z, x, grb::operators::add<double>(), 5.0)} to add 5 to each element of $x$ (if such an overload exists – conceptually, this would treat it as $z_i = x_i + 5$ for all $i$). In general, \texttt{apply} is like a map operation over all elements (it does not change the sparsity pattern — if $x$ has an element at $i$, $z$ will have an element at $i$ after apply, unless filtered by a mask).
+    In summary, to do element-wise multiplication (intersection), you might call:
+    \texttt{grb::eWiseApply(z, x, y, grb::operators::mul<double>())},
+    which computes $z_i = x_i \times y_i$ for each $i$ that has both $x_i$ and $y_i$. To do an element-wise addition (union), you could call
+    \texttt{grb::eWiseApply(z, x, y, addMonoid)}, where \texttt{addMonoid} encapsulates “+” with identity 0, resulting in $z_i = x_i + y_i$ for all indices that exist in either $x$ or $y$. (If an index is missing in one operand, that operand contributes 0.)
 
 \paragraph{API usage notes:} All the above operations require that output parameters be passed by reference, since they are modified in place (e.g., \texttt{y} in \texttt{grb::mxv(y, A, x, ...)} is updated with the result). Input objects are typically passed by const-reference. You should ensure that the output container is allocated with the correct size beforehand – ALP will not automatically resize vectors or matrices on operation calls if dimensions mismatch. If dimensions do not agree (e.g., you try to multiply an $m\times n$ matrix with a vector of length not $n$), the function will return an error code to indicate the misuse. In fact, most ALP primitives return a status code of type \texttt{grb::RC} (with \texttt{grb::SUCCESS} indicating success). For clarity, our code examples will omit explicit error handling, but in a real program you may check the returned code of each operation.
 
 In the next section, we will put these concepts together in a concrete example.
 
 
+\section{Solution to Exercise 8}\label{sec:simple_example}
 
-\section{Simple Example}\label{sec:simple_example}
-
-To illustrate ALP usage, let's create a simple C++ program that:
-\begin{itemize}
-\item Initializes a small matrix $A$ and vector $x$.
-\item Uses \textbf{set} and \textbf{setElement} to assign values.
-\item Performs a matrix-vector multiplication $y = A \times x$ (using \textbf{mxv} with the plus-times semiring).
-\item Computes a dot product $d = x \cdot x$ (using \textbf{dot}).
-\item Performs an element-wise multiplication $z = x * x$ (using \textbf{eWiseApply} with multiply operator).
-\item Prints the results.
-\end{itemize}
-
-Below is the code for this example, with commentary:
+Below a sample solution code for this example, with commentary:\footnote{Maybe better to move this to the solutions directory on the tutorial repository? (TODO)}
 
 \begin{lstlisting}[ language=C++, basicstyle=\ttfamily\small, caption={Example program using ALP/GraphBLAS primitives in C++}, label=lst:example, showstringspaces=false]
 
@@ -380,7 +414,7 @@ static const size_t Iidx[6]    = { 0, 0, 1, 1, 2, 2 };  // row indices
 static const size_t Jidx[6]    = { 0, 2, 1, 2, 0, 1 };  // column indices
 static const double Avalues[6] = { 1.0, 2.0, 3.0, 4.0, 5.0, 6.0 };
 
-int main(int argc, char **argv) {
+int main( int argc, char **argv ) {
     (void)argc;
     (void)argv;
     std::printf("example (ALP/GraphBLAS) corrected API usage\n\n");
@@ -529,47 +563,7 @@ x . x = 14
 z (element-wise product of x with x) = [1, 4, 9]
 \end{verbatim}
 
-This confirms that our ALP operations worked as expected. The code demonstrates setting values, performing an \texttt{mxv} multiplication, an element-wise multiply, and a dot product, covering several fundamental GraphBLAS operations.
-
-
-When you run the example, the program first prints each step of the computation (building the matrix, creating the vector, etc.). In particular, you will see lines like
-
-\begin{lstlisting} [language=bash, basicstyle=\ttfamily\small, showstringspaces=false]
-Step 1: Constructing a 3x3 sparse matrix A.
-Step 2: Creating vector x = [1, 2, 3]^T.
-Step 3: Computing y = A·x under plus‐times semiring.
-Step 4: Computing z = x ⊙ x (element‐wise multiply).
-Step 5: Computing dot_val = xᵀ·x under plus‐times semiring.
-
-\end{lstlisting}
-
-After these messages, the program prints the final results for 
-\(\mathbf{x}\), \(\mathbf{y}\), \(\mathbf{z}\), and \(\mathrm{dot}(\mathbf{x},\mathbf{x})\). In this particular example (with 
-\[
-A = 
-\begin{bmatrix}
-0 & 1 & 2 \\
-0 & 3 & 4 \\
-5 & 6 & 0
-\end{bmatrix},\quad
-\mathbf{x} = \begin{bmatrix}1\\2\\3\end{bmatrix}),
-\]
-one obtains
-\[
-\mathbf{y} \;=\; A \otimes \mathbf{x} \;=\; \begin{bmatrix}7\\18\\17\end{bmatrix},
-\quad
-\mathbf{z} \;=\; \mathbf{x} \,\odot\, \mathbf{x} \;=\; \begin{bmatrix}1\\4\\9\end{bmatrix},
-\quad
-\mathrm{dot}(\mathbf{x},\mathbf{x}) \;=\; 14.
-\]
-Hence, immediately after the step‐headings, the console will display something like:
-\begin{lstlisting} [language=bash, basicstyle=\ttfamily\small, showstringspaces=false]
-// Step 4: Computing z = x ⊙ x (element‐wise multiply).
-x = [ 1, 2, 3 ]
-y = A·x = [ 7, 18, 17 ]
-z = x ⊙ x = [ 1, 4, 9 ]
-dot(x,x) = 14
-\end{lstlisting}
+This confirms that our ALP operations worked as expected. The code demonstrates setting values, performing an \texttt{mxv} multiplication, an element-wise multiply, and a dot product, covering several fundamental ALP/GraphBLAS operations.
 
 
 \section{Makefile and CMake Instructions}\label{sec:build_instructions}
