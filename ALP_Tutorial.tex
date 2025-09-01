@@ -125,7 +125,7 @@ By default, newly instantiated vectors or matrices are empty, meaning they store
   \item a \texttt{grb::Vector<double>} \texttt{x} of length 100, with initial capacity 100;
   \item a \texttt{grb::Vector<double>} \texttt{y} of length 1\ 000, with initial capacity 1\ 000;
   \item a \texttt{grb::Matrix<double>} \texttt{A} of size $(100 \times 1\ 000)$, with initial capacity 1\ 000; and
-  \item a \texttt{grb::Matrix<double>} \texttt{A} of size $(100 \times 1\ 000)$, with initial capacity 5\ 000.
+  \item a \texttt{grb::Matrix<double>} \texttt{B} of size $(100 \times 1\ 000)$, with initial capacity 5\ 000.
 \end{itemize}
 You may start from a copy of \texttt{alp\_hw.cpp}. Employ \texttt{grb::capacity} to print out the capacities of each of the containers. \textbf{Hint:} refer to the user documentation on how to override the default capacities.
 
@@ -140,7 +140,7 @@ Capacity of B: 5000
 Info: grb::finalize (reference) called.
 \end{lstlisting}
 
-\noindent \textbf{Question.} Is overriding the default capacity necessary for all of \texttt{x, y, A} in the above exercise?
+\noindent \textbf{Question.} Is overriding the default capacity necessary for all of \texttt{x, y, A} and \texttt{B} in the above exercise?
 
 \subsection{Basic Container I/O}
 
