@@ -552,6 +552,27 @@ int main( int argc, char **argv ) {
 }
 \end{lstlisting}
 
+The expected output is (bash)
+
+\begin{lstlisting}[style=terminal]
+
+example (ALP/GraphBLAS) corrected API usage
+
+Step 1: Constructing a 3x3 sparse matrix A.
+Step 2: Creating vector x = [1, 2, 3]^T.
+Step 3: Computing y = A·x under plus‐times semiring.
+Step 4: Computing z = x ⊙ y (element‐wise multiply).
+Step 5: Computing dot_val = xᵀ·x under plus‐times semiring.
+
+-- Results --
+x = [ 1, 2, 3 ]
+y = A·x = [ 7, 18, 17 ]
+z = x ⊙ y = [ 7, 36, 51 ]
+dot(x,x) = 14
+$
+\end{lstlisting}
+
+
 
 \section{Makefile and CMake Instructions}\label{sec:build_instructions}
 

@@ -9,19 +9,22 @@
 \usepackage{listings}
 \usepackage{xcolor}
 
-% \lstset{
-%   % Other useful options
-%   breaklines=true, % Automatic line breaking for long lines
-%   breakatwhitespace=true, % Break lines only at whitespace
-%   tabsize=2, % Number of spaces a tab represents
-%   captionpos=b, % Caption position: b (bottom) or t (top)
-%   showspaces=false, % Do not show dots for spaces
-%   showtabs=false, % Do not show markers for tabs
-%   showstringspaces=false, % Do not show dots for spaces within strings
-%   extendedchars=true, % Allow extended ASCII characters
-%   inputencoding=utf8, % Specify input encoding
-%   literate={_}{_}1 {~}{~}1 {^}{^}1 {\textless}{<}1 {\textgreater}{>}1, % Handle special characters
-% }
+% Define colors for the terminal style
+\definecolor{terminalback}{rgb}{0.1, 0.1, 0.1}
+\definecolor{terminaltext}{rgb}{0.9, 0.9, 0.9}
+
+% Define the 'terminal' style
+\lstdefinestyle{terminal}{
+    backgroundcolor=\color{terminalback},
+    basicstyle=\ttfamily\small\color{terminaltext},
+    frame=single,
+    rulecolor=\color{white},
+    breaklines=true,
+    captionpos=b,
+    showstringspaces=false,
+    title=\texttt{Terminal}
+}
+
 
 \lstset{
   % Colors (requires xcolor package)
