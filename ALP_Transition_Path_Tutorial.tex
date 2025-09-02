@@ -26,17 +26,16 @@ Then enter the repository directory.
 \item Build ALP: Create a build directory and invoke the provided bootstrap script to configure the project with CMake, then compile and install:
 \begin{lstlisting}[language=bash, basicstyle=\ttfamily\small, showstringspaces=false]
 $ cd ALP && mkdir build && cd build
-$ ../bootstrap.sh --prefix=../install # configure the build
+$ export ALP_INSTALL_DIR=../install # Set ALP installation directory
+$ ../bootstrap.sh --prefix=$ALP_INSTALL_DIR # configure the build
 $ make -j # compile the ALP library
-$ make -j install # install to ../install
-$ source ../install/bin/setenv
-
+$ make -j install # install to $ALP_INSTALL_DIR
 \end{lstlisting}
 (You can choose a different installation prefix as needed.)
 
 \item Set up environment: After installation, activate the ALP environment by sourcing the script setenv in the install directory:
 \begin{lstlisting}[language=bash, basicstyle=\ttfamily\small, showstringspaces=false]
-$ source ../install/bin/setenv
+$ source $ALP_INSTALL_DIR/bin/setenv
 \end{lstlisting}
 This script updates paths to make ALP's compiler wrapper and libraries available.
 
@@ -195,10 +194,10 @@ Let’s break down what happens here:
 To compile the above code with ALP, we will use the direct linking option as discussed. 
 \begin{lstlisting}[language=bash, basicstyle=\ttfamily\small, showstringspaces=false]
 g++ example.cpp -o cg_demo \
-  -I install/include \
-  -L install/lib \
-  -L install/lib/sequential \
-  -Wl,-rpath,$PWD/install/lib/sequential \
+  -I $ALP_INSTALL_DIR/include \
+  -L $ALP_INSTALL_DIR/lib \
+  -L $ALP_INSTALL_DIR/lib/sequential \
+  -Wl,-rpath,$ALP_INSTALL_DIR/lib/sequential \
   -lspsolver_shmem_parallel \
   -lalp_cspblas_shmem_parallel \
   -lgraphblas \
