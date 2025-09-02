@@ -410,22 +410,6 @@ Below a sample solution code for this example, with commentary:\footnote{Maybe b
 
 using namespace grb;
 
-% A = 
-% \begin{bmatrix}
-% 0 & 1 & 2 \\
-% 0 & 3 & 4 \\
-% 5 & 6 & 0
-% \end{bmatrix},\quad
-% Step 1: Constructing a 3x3 sparse matrix A.
-% Step 2: Creating vector x = [1, 2, 3]^T.
-% Step 3: Computing y = A·x under plus‐times semiring.
-% Step 4: Computing z = x ⊙ y (element‐wise multiply).
-% Step 5: Computing dot_val = xᵀ·x under plus‐times semiring.
-% x = [ 1, 2, 3 ]
-% y = A·x = [ 8, 18, 17 ]
-% z = x ⊙ y = [ 8, 36, 51 ]
-% dot(x,x) = 14
-
 // Indices and values for our sparse 3x3 matrix A:
 //
 //      A = [ 1   0   2 ]
