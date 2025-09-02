@@ -261,10 +261,14 @@ We have shown how matrices may be built from input iterators while similarly, ve
 \subsection{Numerical Linear Algebra}
 
 GraphBLAS, as the name implies, provides canonical BLAS-like functionalities on sparse matrices, sparse vectors, and dense vectors. These include \texttt{grb::dot}, \texttt{grb::eWiseAdd}, \texttt{grb::eWiseMul}, \texttt{grb::mxv}, \texttt{grb::vxm}, and \texttt{grb::mxm}. The former three scalar/vector primitives are dubbed \emph{level 1}, the following two matrix--vector primitives \emph{level 2}, and the latter matrix--matrix primitive \emph{level 3}. Their functionalities are summarised as follows:\newline
-
+ 
       \textbf{grb::dot} – Compute the dot product of two vectors, $\alpha$\textit{+=}$u^Tv$ or $\alpha$\textit{+=}$\sum_i (u_i \times v_i)$, in essence combining element-wise multiplication with a reduction. The output $\alpha$ is a scalar, usually a primitive type such as \texttt{double}. Unlike the out-of-place \texttt{grb::set}, the \texttt{grb::dot} updates the output scalar in-place.\newline
 
-	\textbf{grb::eWiseMul, grb::eWiseAdd} - These primitives combine two containers element-by-element, the former using element-wise multiplication, and the latter using element-wise addition. Different from \texttt{grb::set}, these primitives are in-place, meaning the result of the element-wise operations are added to any elements already in the output container; i.e., \texttt{grb::eWiseMul} computes $z$\textit{+=}$x\odot y$, where $\odot$ denotes element-wise multiplication. In case of sparse vectors and an initially-empty output container, the primitives separate themselves in terms of the structure of the output vector, which is composed either of an intersection or union of the input structures.
+	\textbf{grb::eWiseMul, grb::eWiseAdd} - These primitives combine two containers element-by-element, the former using element-wise multiplication, and the latter using element-wise addition. Different from \texttt{grb::set}, 
+    these primitives are in-place, meaning the result of the element-wise operations are added to any elements already in the output container; i.e., \texttt{grb::eWiseMul} computes $z$\textit{+=}$x\odot y$, where $\odot$ denotes element-wise multiplication. 
+    In case of sparse vectors and an initially-empty output container, the primitives separate themselves in terms of the structure of the output vector, which is composed either of an intersection or union of the input structures.
+    Since \textbf{grb} primitives are unvaware of conventional multiplication and addition operations, they are provedied 
+    as correspond monoids from the semiring argument, the multiplicative and additive monoids.
 \begin{itemize}
   \item \textbf{intersection (eWiseMul):} The primitive will compute only an element-wise multiplication for those positions where \emph{both} input containers have entries. This is since any missing entries are assumed to have value zero, and are therefore ignored under multiplication.
   \item \textbf{union (eWiseAdd):} The primitive will compute element-wise addition for those positions where \emph{any} of the input containers have entries. This is again because a missing entry in one of the containers is assumed to have a zero value, meaning the result of the addition simply equals the value of the entry present in the other container.
@@ -289,7 +293,7 @@ rc = rc ? rc : grb::mxv(y, A, x, plusTimes);
 \item use \texttt{grb::set} and \texttt{grb::setElement} to assign values (see below for a suggestion);
 \item perform a matrix--vector multiplication $y = Ax$ (using \texttt{grb::mxv} with the plus-times semiring);
 \item compute a dot product $d = x^Tx$ (using \texttt{grb::dot} with the same semiring);
-\item perform an element-wise multiplication $z = x \odot x$ (using \texttt{grb::eWiseMul} with the same semiring); and
+\item perform an element-wise multiplication $z = x \odot y$ (using \texttt{grb::eWiseMul} with the same semiring); and
 \item print the results.
 \end{enumerate}
 One example $A, x$ could be:
@@ -307,11 +311,11 @@ for which, if the exercise is implemented OK, the output would be something like
 Step 1: Constructing a 3x3 sparse matrix A.
 Step 2: Creating vector x = [1, 2, 3]^T.
 Step 3: Computing y = A·x under plus‐times semiring.
-Step 4: Computing z = x ⊙ x (element‐wise multiply).
+Step 4: Computing z = x ⊙ y (element‐wise multiply).
 Step 5: Computing dot_val = xᵀ·x under plus‐times semiring.
 x = [ 1, 2, 3 ]
-y = A·x = [ 7, 18, 17 ]
-z = x ⊙ x = [ 1, 4, 9 ]
+y = A·x = [ 8, 18, 17 ]
+z = x ⊙ y = [ 8, 36, 51 ]
 dot(x,x) = 14
 \end{lstlisting}
 
@@ -403,6 +407,22 @@ Below a sample solution code for this example, with commentary:\footnote{Maybe b
 
 using namespace grb;
 
+% A = 
+% \begin{bmatrix}
+% 0 & 1 & 2 \\
+% 0 & 3 & 4 \\
+% 5 & 6 & 0
+% \end{bmatrix},\quad
+% Step 1: Constructing a 3x3 sparse matrix A.
+% Step 2: Creating vector x = [1, 2, 3]^T.
+% Step 3: Computing y = A·x under plus‐times semiring.
+% Step 4: Computing z = x ⊙ y (element‐wise multiply).
+% Step 5: Computing dot_val = xᵀ·x under plus‐times semiring.
+% x = [ 1, 2, 3 ]
+% y = A·x = [ 8, 18, 17 ]
+% z = x ⊙ y = [ 8, 36, 51 ]
+% dot(x,x) = 14
+
 // Indices and values for our sparse 3x3 matrix A:
 //
 //      A = [ 1   0   2 ]
@@ -472,16 +492,15 @@ int main( int argc, char **argv ) {
     }
 
     //------------------------------
-    // 6) Compute z = x ⊙ x  (element‐wise multiply) via eWiseApply with mul
+    // 6) Compute z = x ⊙ y  (element‐wise multiply) via eWiseMul with semiring
     //------------------------------
-    std::printf("Step 4: Computing z = x ⊙ x (element‐wise multiply).\n");
+    std::printf("Step 4: Computing z = x ⊙ y (element‐wise multiply).\n");
     {
-        RC rc = eWiseApply<descriptors::no_operation>(
-            z, x, x,
-            grb::operators::mul<double>()   // plain multiplication ⊙
+        RC rc = eWiseMul<descriptors::no_operation>(
+            z, x, y, plusTimes
         );
         if(rc != SUCCESS) {
-            std::cerr << "Error: eWiseApply(z,x,x,mul) failed with code " << toString(rc) << "\n";
+            std::cerr << "Error: eWiseMul(z,x,y,plusTimes) failed with code " << toString(rc) << "\n";
             return (int)rc;
         }
     }
@@ -523,47 +542,12 @@ int main( int argc, char **argv ) {
     std::printf("\n-- Results --\n");
     printVector(x, "x");
     printVector(y, "y = A·x");
-    printVector(z, "z = x ⊙ x");
+    printVector(z, "z = x ⊙ y");
     std::printf("dot(x,x) = %g\n\n", dot_val);
 
     return EXIT_SUCCESS;
 }
 \end{lstlisting}
-
-In this program, we manually set up a $3\times3$ matrix $A$:
-\[
-A = \begin{pmatrix}
-1 & 0 & 2 \\
-0 & 3 & 4 \\
-5 & 6 & 0
-\end{pmatrix},
-\]
-
-
-and a vector $x = [1,2,3]^T$. The code multiplies $A$ by $x$, producing $y = A \times x$. Given the above $A$ and $x$, the result should be:
-
-\[
-y = \begin{pmatrix}
-7 \\
-18 \\
-17
-\end{pmatrix},
-\]
-
-because
-$y_0 = 1\cdot 1 + 0\cdot 2 + 2\cdot 3 = 7$,
-$y_1 = 0\cdot1 + 3\cdot2 + 4\cdot3 = 18$,
-$y_2 = 5\cdot1 + 6\cdot2 + 0\cdot3 = 17$.
-
-We also compute the dot product $x \cdot x = 1^2 + 2^2 + 3^2 = 14$ and the element-wise product $z = x * x = [1,4,9]^T$. The program then extracts the results with \texttt{grb::extractElement} (to get values from the containers) and prints them. Running this program would produce output similar to:
-
-\begin{verbatim}
-y = [7, 18, 17]
-x . x = 14
-z (element-wise product of x with x) = [1, 4, 9]
-\end{verbatim}
-
-This confirms that our ALP operations worked as expected. The code demonstrates setting values, performing an \texttt{mxv} multiplication, an element-wise multiply, and a dot product, covering several fundamental ALP/GraphBLAS operations.
 
 
 \section{Makefile and CMake Instructions}\label{sec:build_instructions}
