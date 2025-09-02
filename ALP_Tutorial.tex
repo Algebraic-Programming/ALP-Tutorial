@@ -554,7 +554,7 @@ int main( int argc, char **argv ) {
 
 The expected output is (bash)
 
-\begin{lstlisting}[style=terminal]
+\begin{lstlisting}[language=bash]
 
 example (ALP/GraphBLAS) corrected API usage
 
@@ -604,7 +604,7 @@ If you prefer to compile without the wrapper (for integration into an existing p
 For example, if ALP is installed in \texttt{../install} as above, you could compile the program manually with:
 \begin{lstlisting}[language=bash]
 $ g++ -std=c++17 example.cpp
--I../install/include -L../install/lib
+-I../install/include -D_GRB_WITH_REFERENCE -D_GRB_WITH_OMP -L../install/lib/sequential
 -lgraphblas -lnuma -lpthread -lm -fopenmp -o example
 \end{lstlisting}
 Here we specify the include path for ALP headers and link with the ALP GraphBLAS library (assumed to be named \texttt{libgraphblas}) as well as libnuma, libpthread, libm (math), and OpenMP (the \texttt{-fopenmp} flag). These additional libraries are required by ALP (as noted in the install documentation). Using this command (or a corresponding Makefile rule) will produce the executable \texttt{example}.
@@ -615,17 +615,12 @@ If you are using CMake for your own project, you can integrate ALP as follows. T
     cmake_minimum_required(VERSION 3.13)
     project(ALPExample CXX)
     find_package(OpenMP REQUIRED) # find OpenMP for -fopenmp
-    Set ALP install paths (adjust ../install to your prefix)
-    
-    include_directories("../install/include")
-    link_directories("../install/lib")
-    
+    set(ALP_PREFIX "../install") # Adjust ../install to your ALP installation prefix
+    include_directories("${ALP_PREFIX}/include")
+    link_directories("${ALP_PREFIX}/lib" "${ALP_PREFIX}/lib/sequential")
     add_executable(example example.cpp)
-    target_link_libraries(example PRIVATE
-        graphblas # ALP GraphBLAS library
-        OpenMP::OpenMP_CXX # OpenMP (threading support)
-        pthread numa m # Pthreads, NUMA, math libraries
-    )
+    target_compile_options(example PRIVATE -O3 -march=native -std=c++17 -D_GRB_WITH_REFERENCE -D_GRB_WITH_OMP)
+    target_link_libraries(example graphblas numa pthread m OpenMP::OpenMP_CXX)
 \end{lstlisting}
 
 This will ensure the compiler knows where to find \texttt{graphblas.hpp} and links the required libraries. After configuring with CMake and building (via \texttt{make}), you can run the program as usual.
