@@ -272,6 +272,9 @@ GraphBLAS, as the name implies, provides canonical BLAS-like functionalities on 
 \begin{itemize}
   \item \textbf{intersection (eWiseMul):} The primitive will compute only an element-wise multiplication for those positions where \emph{both} input containers have entries. This is since any missing entries are assumed to have value zero, and are therefore ignored under multiplication.
   \item \textbf{union (eWiseAdd):} The primitive will compute element-wise addition for those positions where \emph{any} of the input containers have entries. This is again because a missing entry in one of the containers is assumed to have a zero value, meaning the result of the addition simply equals the value of the entry present in the other container.
+
+      Note: The \texttt{grb} primitives do not assume conventional addition or multiplication. Instead, these operations are defined by the semiring argument, which specifies the additive and multiplicative monoids to use for the computation.
+
 \end{itemize}
 
     \textbf{grb::mxv}, \textbf{grb::vxm} - Performs right- and left-handed matrix--vector multiplication; i.e., $u$\textit{+=}$Av$ and $u$\textit{+=}$vA$, respectively. More precisely, e.g., \texttt{grb::mxv} computes the standard linear algebraic operation $u_i = u_i + \sum_j A_{ij} v_j$. Different from \texttt{grb::set}, the \texttt{grb::mxv} is an in-place operation. If the intent is to compute $u=Av$ while $u$ is not empty, there are two solutions: 1) $u$ may cleared first (\texttt{grb::clear(u)}), or 2) $u$ may have all its values set to zero first (\texttt{grb::set(u, 0)}).\newline
