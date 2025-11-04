@@ -1,0 +1,139 @@
+\documentclass{beamer}
+\usepackage{graphicx}
+\usepackage{amsmath,amssymb}
+\usepackage{listings}
+\usepackage{hyperref}
+
+\title{Algebraic Programming with GraphBLAS}
+\subtitle{From HPC to GraphBLAS and Tensor Algebra}
+\author{Your Name}
+\date{\today}
+
+\begin{document}
+
+\frame{\titlepage}
+
+\section{Introduction to HPC and BLAS/LAPACK}
+
+\begin{frame}{Historical Context: HPC and Linear Algebra}
+\begin{itemize}
+  \item BLAS and LAPACK as foundational HPC libraries
+  \item Focus on dense operations like matrix-matrix multiply (GEMM)
+  \item Optimization strategies: SIMD, cache tiling, loop unrolling
+  \item Limitations for irregular/sparse workloads (e.g., graphs)
+\end{itemize}
+\end{frame}
+
+\section{The GraphBLAS Standard}
+
+\begin{frame}{Motivation and Concept}
+\begin{itemize}
+  \item Graph algorithms expressed as sparse linear algebra
+  \item Semiring abstraction: $\langle D, \oplus, \otimes \rangle$
+  \item Customizable algebra for graph-specific semantics
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Example Semirings and Use Cases}
+\begin{itemize}
+  \item Boolean semiring: logical OR/AND for BFS
+  \item (min, +) semiring for shortest paths
+  \item Arithmetic semiring for numeric computation
+\end{itemize}
+\end{frame}
+
+\section{Algebraic Programming with ALP-GraphBLAS}
+
+\begin{frame}{The ALP Framework}
+\begin{itemize}
+  \item C++ template library implementing GraphBLAS
+  \item STL-style syntax with automatic parallelization
+  \item Backends: sequential, OpenMP, LPF (distributed)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{GraphBLAS BFS Example (C API)}
+\begin{lstlisting}[language=C]
+GrB_Info BFS(GrB_Vector *v, GrB_Matrix A, GrB_Index s) {
+  GrB_Vector q;
+  GrB_Vector_new(&q, GrB_BOOL, n);
+  GrB_Vector_setElement(q, true, s);
+  do {
+    level++;
+    GrB_apply(*v, GrB_NULL, GrB_PLUS_INT32,
+              GrB_SECOND_INT32, q, level, GrB_NULL);
+    GrB_vxm(q, *v, GrB_NULL, GrB_LOR_LAND_SEMIRING_BOOL,
+            q, A, GrB_DESC_RC);
+  } while (nvals > 0);
+  GrB_free(&q);
+  return GrB_SUCCESS;
+}
+\end{lstlisting}
+\end{frame}
+
+\section{Dense and Tensor Algebra Extensions}
+
+\begin{frame}{Structured Dense Algebra}
+\begin{itemize}
+  \item Extending ALP to dense linear algebra
+  \item Compile-time structure annotations (symmetry, banded, etc.)
+  \item More efficient code generation for structured cases
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Towards Tensor Algebra}
+\begin{itemize}
+  \item Generalizing GraphBLAS to multi-dimensional tensors
+  \item Tensor contractions using extended semirings
+  \item Exploring performance optimizations for tensor algebra
+\end{itemize}
+\end{frame}
+
+\section{Future Work: Performance Modeling}
+
+\begin{frame}{BSP-based Performance Model}
+\begin{itemize}
+  \item Integrate HBSP model with ALP
+  \item Assign costs to computation, memory, and communication
+  \item Predict performance on hierarchical hardware
+\end{itemize}
+\end{frame}
+
+\section{Hands-On: C++ and Python Wrappers}
+
+\begin{frame}[fragile]{Python Example: Matrix Multiply}
+\begin{lstlisting}[language=Python]
+from alp import Matrix, Semiring
+A = Matrix.from_dense([[1,0],[0,1]])
+B = Matrix.from_dense([[2,3],[4,5]])
+C = A @ B  # Default semiring
+print(C.to_dense())
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{C++ Example}
+\begin{lstlisting}[language=C++]
+#include <alp/matrix.hpp>
+using namespace alp;
+int main() {
+  Matrix<int> A({{1,0},{0,1}});
+  Matrix<int> B({{2,3},{4,5}});
+  auto C = A * B;
+  C.print();
+}
+\end{lstlisting}
+\end{frame}
+
+\section{Conclusion}
+
+\begin{frame}{Summary}
+\begin{itemize}
+  \item Evolution from BLAS to GraphBLAS for graph algorithms
+  \item Algebraic Programming with ALP enables high-level abstraction and performance
+  \item Extensions to dense/tensor algebra and performance modeling ongoing
+\end{itemize}
+\end{frame}
+
+\frame{\titlepage}
+
+\end{document}
