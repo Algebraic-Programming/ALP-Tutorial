@@ -30,6 +30,7 @@
     basicstyle=\ttfamily\small\color{terminaltext},
     frame=single, rulecolor=\color{white}, breaklines=true,
     captionpos=b, showstringspaces=false,
+    upquote=true, columns=fullflexible,
     literate={·}{{$\cdot$}}1 {⊙}{{$\odot$}}1 {ᵀ}{{$^\top$}}1 {×}{{$\times$}}1 {‐}{{-}}1 {–}{{-}}1 {—}{{-}}1
 }
 \lstdefinestyle{code}{
@@ -67,37 +68,64 @@
 \end{frame}
 
 \subsection{2) Installation on Linux, demos}
-\begin{frame}[fragile]{Installation on Linux (ALP)}
+\begin{frame}[fragile]{Hands-on: Installation}
+\framesubtitle{Prerequisites (skip if already installed)}
 \begin{itemize}
-    \item Prerequisites: compiler, OpenMP, CMake, NUMA, pthreads
-    \item Clone, bootstrap, build, install
-    \item Environment setup and grbcxx/grbrun
+    \item Requirements:
+    \begin{itemize}
+        \item C++11 compiler, OpenMP, CMake (>=3.13), libNUMA, pthreads
+    \end{itemize}
+    \item Debian/Ubuntu:
+\begin{lstlisting}[style=terminal, language=bash]
+sudo apt-get install build-essential libnuma-dev libpthread-stubs0-dev cmake
+\end{lstlisting}
+    \item Red Hat/CentOS:
+\begin{lstlisting}[style=terminal, language=bash]
+dnf group install "Development Tools"
+dnf install numactl-devel cmake
+\end{lstlisting}
 \end{itemize}
 % Owner: PA
-% Source (ALP_Tutorial.tex - Installation on Linux):
-% \section{Installation on Linux}\label{sec:installation}
-% \begin{enumerate}
-% \item \textbf{Install prerequisites} ... Debian/Ubuntu:
-% \begin{verbatim}
-% sudo apt-get install build-essential libnuma-dev libpthread-stubs0-dev cmake;
-% \end{verbatim}
-% \item \textbf{Obtain ALP} ... git clone https://github.com/Algebraic-Programming/ALP.git
-% \item \textbf{Build ALP}
-% \begin{lstlisting}[language=bash]
-% $ cd ALP && mkdir build && cd build
-% $ ../bootstrap.sh --prefix=../install
-% $ make -j
-% $ make install
-% \end{lstlisting}
-% \item \textbf{Set up environment}:
-% \begin{lstlisting}[language=bash]
-% $ source ../install/bin/setenv
-% \end{lstlisting}
-% \item \textbf{Compile an example}:
-% \begin{lstlisting}[language=bash]
-% $ grbcxx ../examples/sp.cpp -o sp_example
-% \end{lstlisting}
-% \end{enumerate}
+% Source (ALP_Tutorial.tex - Installation on Linux, step 1)
+\end{frame}
+
+\begin{frame}[fragile]{Hands-on: Installation}
+\framesubtitle{Obtain and Build ALP}
+\begin{enumerate}
+    \item Clone \textbf{ALP} from the official GitHub repository:
+\begin{lstlisting}[style=terminal, language=bash]
+git clone https://github.com/Algebraic-Programming/ALP.git
+\end{lstlisting}
+    \item Build and install \textbf{ALP} with default configuration settings:
+\begin{lstlisting}[style=terminal, language=bash]
+cd ALP && mkdir build && cd build
+../bootstrap.sh --prefix=../install
+make -j
+make install
+\end{lstlisting}
+\end{enumerate}
+% Owner: PA
+% Source (ALP_Tutorial.tex - Installation on Linux, steps 2-3)
+\end{frame}
+
+\begin{frame}[fragile]{Hands-on: Installation}
+\framesubtitle{Setup Environment and Test}
+\begin{enumerate}
+    \item \textbf{Activate ALP environment}:
+\begin{lstlisting}[style=terminal, language=bash]
+source ../install/bin/setenv
+\end{lstlisting}
+    \item \textbf{Compile example}:
+\begin{lstlisting}[style=terminal, language=bash]
+grbcxx ../examples/sp.cpp -o sp_example
+\end{lstlisting}
+    \item \textbf{Run}:
+\begin{lstlisting}[style=terminal, language=bash]
+grbrun ./sp_example
+\end{lstlisting}
+\end{enumerate}
+% Owner: PA
+% Source (ALP_Tutorial.tex - Installation on Linux, steps 4-6)
 \end{frame}
 
 \subsection{3) Hands-on: containers, I/O, copying, masking, standard matrices (3.1–3.3)}
