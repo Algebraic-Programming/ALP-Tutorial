@@ -51,6 +51,18 @@
 \author{ALP Team}
 \date{\today}
 
+% Show roadmap before each section/subsection with upcoming content highlighted
+\AtBeginSection{
+  \begin{frame}{Roadmap}
+    \tableofcontents[currentsection,sectionstyle=show/shaded,subsectionstyle=show/show/hide]
+  \end{frame}
+}
+\AtBeginSubsection{
+  \begin{frame}{Roadmap}
+    \tableofcontents[currentsection,currentsubsection,sectionstyle=show/shaded,subsectionstyle=show/shaded/hide]
+  \end{frame}
+}
+
 \begin{document}
 \frame{\titlepage}
 
@@ -59,18 +71,139 @@
 % =========================
 \section{Monday 10 Nov}
 
+% One initial agenda slide for Monday; will be auto-repeated via Roadmap frames
+\begin{frame}{Today's Plan (Monday)}
+\begin{enumerate}
+  \item Introduction to GraphBLAS and ALP
+  \item Installation on Linux, demos
+  \item Hands-on: containers, I/O, copying, masking, standard matrices
+  \item Introduction to primitives
+  \item Exercise 8
+  \item Closure: transition paths, Python mxv examples
+  \item Ising Machine, new solvers
+\end{enumerate}
+\end{frame}
+
 \subsection{1) Introduction to GraphBLAS and ALP}
+% Owner: DJ
+
+% Intro (concise outline)
 \begin{frame}{Introduction to GraphBLAS and ALP}
 \begin{itemize}
-    \item Goals of the tutorial
-    \item What is ALP and GraphBLAS
-    \item Overview of containers, semirings, and primitives
+  \item What you'll learn: algebraic programming for graphs and sparse data
+  \item Who it's for: HPC developers and solver authors
+  \item How we'll use ALP: C++ headers, precompiled libraries, Python API
 \end{itemize}
 % Owner: DJ
-% Source (introduction.tex):
-% \section{Introduction}\label{sec:introduction}
-% ALgebraic Programming, or ALP for short, encompasses software technologies...
+% TODO: add a one-slide agenda summary graphic
 \end{frame}
+
+% Slide 1
+\begin{frame}{Goals, Audience, and Scope}
+\begin{itemize}
+  \item Goals
+    \begin{itemize}
+      \item Express algorithms as algebra over vectors/matrices
+      \item Introduce GraphBLAS: containers, semirings, primitives, masks
+      \item Demonstrate ALP backends for performance portability
+    \end{itemize}
+  \item Audience
+    \begin{itemize}
+      \item Developers of HPC applications, graph analytics, and solvers
+      \item No prior GraphBLAS/ALP knowledge assumed
+    \end{itemize}
+  \item Scope: multiple usage modes
+    \begin{itemize}
+      \item C++ header library for new algorithms/solvers (template API)
+      \item Precompiled libraries: use provided algorithms as black boxes
+      \item Python API for precompiled algorithms
+    \end{itemize}
+\end{itemize}
+% Owner: DJ
+% Source: ALP_Tutorial.tex (intro), alp_graphblas_tutorial.txt (overview)
+\end{frame}
+
+% Slide 2
+\begin{frame}{ALP in One Slide: Programming Model and Backends}
+\begin{itemize}
+  \item Programming model (humble by design)
+    \begin{itemize}
+      \item Heavily templated C++ header library (no runtime codegen)
+      \item Hardware-unaware, hardware-independent user code
+      \item Algebraic API: write what to compute, not how
+    \end{itemize}
+  \item Backends handle hardware specifics
+    \begin{itemize}
+      \item reference (single-threaded), \texttt{reference\_omp} (OpenMP)
+      \item nonblocking (multi-threaded with auto-fusion)
+      \item bsp1d (distributed/LPF), dense-dispatch (BLAS-backed, WIP), tensor (experimental, WIP)
+      \item Same source runs across backends with consistent semantics
+    \end{itemize}
+  \item Flexible infrastructure
+    \begin{itemize}
+      \item Rich type system and traits enable different and mixed data-type operations
+      \item Compile-time algebraic properties (associative, commutative, idempotent, annihilators)
+            are known to the backends and propagate from top to bottom of the algorithm
+    \end{itemize}
+\end{itemize}
+% Owner: DJ
+% TODO: add pipeline diagram: User code → algebra → backend → hardware
+% Source: ALP_Tutorial.tex (intro), alp_graphblas_tutorial.txt (ALP focus)
+\end{frame}
+
+% Slide 3
+\begin{frame}{What is GraphBLAS: Concepts and Motivation}
+\begin{itemize}
+  \item Motivation
+    \begin{itemize}
+      \item Graphs map to sparse matrices; algorithms to linear algebra
+      \item Sparse/graph workloads are bandwidth-bound and irregular
+    \end{itemize}
+  \item Core concepts
+    \begin{itemize}
+      \item Semirings $\langle D,\oplus,\otimes\rangle$ (plus–times, min–plus, Boolean)
+      \item Primitives: mxv/vxm, mxm, eWiseAdd/Mul/Apply, dot, masks, descriptors
+      \item Containers: \texttt{grb::Vector<T>}, \texttt{grb::Matrix<T>}
+    \end{itemize}
+  \item Why beyond traditional dense LA
+    \begin{itemize}
+      \item Algebraic flexibility enables BFS, SSSP, etc., via non-standard "addition" and "multiplication"
+      \item Masking and sparsity-aware execution preserve efficiency
+    \end{itemize}
+\end{itemize}
+% Owner: DJ
+% Source: alp_graphblas_tutorial.txt (GraphBLAS), ALP_Tutorial.tex (ALP/GraphBLAS)
+\end{frame}
+
+% Slide 4
+\begin{frame}{Automation and Optimization Space}
+\begin{itemize}
+  \item What automation to expect (from ALP backends)
+    \begin{itemize}
+      \item Auto-parallel execution (threads/processes) across backends
+      \item Cache-aware blocking/tiling; minimized data movement
+      \item Mask-aware computation and potential kernel fusion (backend-dependent)
+    \end{itemize}
+  \item Algorithm-level optimization space (ALP vs. BLAS/LAPACK)
+    \begin{itemize}
+      \item ALP: end-to-end algebraic programs expose global opportunities
+            (fusion across primitives, mask-driven sparsity cuts, reordering, schedule selection)
+      \item LAPACK: dense factorizations focus on tiling and blocking inside fixed algorithms
+      \item BLAS-only: kernel-local tuning; limited visibility for cross-kernel optimizations
+    \end{itemize}
+  \item Portability outcome
+    \begin{itemize}
+      \item Express once at the algebraic level; get optimized code on shared, distributed, or hybrid memory systems
+      \item Mixed-type and custom-operator workflows supported via templates
+    \end{itemize}
+\end{itemize}
+% Owner: DJ
+% TODO: add a tiny mxv code snippet + "same code, different backend" example timings
+% Source: ALP_Tutorial.tex (semantics, portability), alp_graphblas_tutorial.txt (landscape)
+\end{frame}
+
+% (Duplicate intro frames removed below to avoid repetition)
+
 
 \subsection{2) Installation on Linux, demos}
 \begin{frame}[fragile]{2.ALP Installation}
