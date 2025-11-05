@@ -73,7 +73,7 @@
 \end{frame}
 
 \subsection{2) Installation on Linux, demos}
-\begin{frame}[fragile]{ALP Installation}
+\begin{frame}[fragile]{2.ALP Installation}
 \framesubtitle{Prerequisites (skip if already installed)}
 \begin{itemize}
     \item Requirements:
@@ -94,7 +94,7 @@ dnf install numactl-devel cmake
 % Source (ALP_Tutorial.tex - Installation on Linux, step 1)
 \end{frame}
 
-\begin{frame}[fragile]{ALP Installation}
+\begin{frame}[fragile]{2. ALP Installation}
 \framesubtitle{Obtain and Build ALP}
 \begin{enumerate}
     \item Clone \textbf{ALP} from the official GitHub repository:
@@ -113,7 +113,7 @@ make install
 % Source (ALP_Tutorial.tex - Installation on Linux, steps 2-3)
 \end{frame}
 
-\begin{frame}[fragile]{ALP Installation}
+\begin{frame}[fragile]{2. ALP Installation}
 \framesubtitle{Setup Environment and Test}
 \begin{enumerate}
     \item \textbf{Activate ALP environment}:
@@ -133,7 +133,7 @@ grbrun ./sp_example
 % Source (ALP_Tutorial.tex - Installation on Linux, steps 4-6)
 \end{frame}
 
-\begin{frame}[fragile]{Hands-on preparation: Setting up scripts}
+\begin{frame}[fragile]{3. Hands-on: Setting up scripts}
     \framesubtitle{ALP/GraphBLAS Overview}
     \begin{itemize}
         \item You can find code skeletons for the tutorial in: \texttt{/some/path/to/alp/tutorial/scripts}
@@ -157,7 +157,7 @@ Info: grb::finalize (reference) called.
     \end{itemize}
 \end{frame}
 
-\begin{frame}[fragile]{Hands-on preparation: What did we just run?}
+\begin{frame}[fragile]{3. Hands-on: What did we just run?}
     \framesubtitle{Hello World in ALP/GraphBLAS}
     \vspace{-0.6em}
     \begin{lstlisting}[style=code, language=C++, basicstyle=\ttfamily\scriptsize]
@@ -188,7 +188,7 @@ int main( int argc, char ** argv ) {
         % Source (ALP_Tutorial.tex - ALP/GraphBLAS, Hello World)
 \end{frame}
 
-\begin{frame}{Hands-on preparation: What did we just run?}
+\begin{frame}{3. Hands-on: What did we just run?}
 \framesubtitle{ALP/GraphBLAS Overview \PA{Some of this info might/should be at the intro. Adjust accordingly.}}
 \begin{itemize}
     \item Pure C++ (developed similarly to the GraphBLAS C specification)
@@ -201,13 +201,17 @@ int main( int argc, char ** argv ) {
     \item \textbf{\texttt{grb::Launcher}}:
     \begin{itemize}
         \item Wraps calls to ALP programs
-        \item Adapts to run-time conditions (e.g., distributed execution) \PA{Check what this means}
+        \item Adapts to run-time conditions (e.g., distributed execution)
+        \item \textbf{Question:} Why is the last argument to \texttt{launcher.exec} \texttt{true}?
+        \begin{itemize}
+            \item Consider the programmer reference documentation for the \texttt{grb::Launcher}...
+        \end{itemize}
     \end{itemize}
     \item All ALP programs: input (\href{https://www.geeksforgeeks.org/cpp/pod-type-in-cpp/}{\textcolor{blue}{POD}}) $\rightarrow$ output (POD)
     \begin{itemize}
         \item \textbf{\texttt{hello\_world} example}:
         \begin{itemize}
-            \item Function, filename passed as input (POD type)
+            \item \textbf{Question:} Why is \texttt{argv[0]} not directly passed as input to \texttt{hello\_world}?
             \item Returns zero error\_code as output (POD type)
         \end{itemize}
     \end{itemize}
@@ -223,20 +227,61 @@ int main( int argc, char ** argv ) {
 \end{frame}
 
 \subsection{3) Hands-on: containers, I/O, copying, masking, standard matrices (3.1–3.3)}
-\begin{frame}[fragile]{Hands-on: Containers and I/O (3.1)}
+\begin{frame}[fragile]{3.1. Hands-on: Containers}
+\framesubtitle{3.1. ALP/GraphBLAS Containers}
 \begin{itemize}
-    \item grb::Vector, grb::Matrix basics
-    \item Capacity, nnz, sizes
-    \item Iterators and output
+    \item \textbf{Primary containers:} \texttt{grb::Vector<T>} and \texttt{grb::Matrix<T>}
+    \begin{itemize}
+        \item Templated on value type \texttt{T} (any POD type: \texttt{double}, \texttt{std::complex<T>}, etc.)
+        \item Support for sparse: Store nonzeros efficiently internally (with CSR/CSC formats)
+    \end{itemize}
+    \item \textbf{Examples:}
+\begin{lstlisting}[style=code, language=C++, basicstyle=\ttfamily\scriptsize]
+grb::Vector<double> x(100000), y(150000);
+grb::Matrix<void> A(150000, 100000);
+\end{lstlisting}
+\begin{itemize}
+    \item \textbf{Note:} \texttt{Matrix<void>} stores pattern only (Boolean matrices/unweighted graphs)
+\end{itemize}
+\item \textbf{Container Properties:}
+    \begin{itemize}
+        \item \texttt{grb::size(vector)}, \texttt{grb::nrows(matrix)}, \texttt{grb::ncols(matrix)}: dimensions
+        \item \texttt{grb::nnz(container)}: number of stored elements ($<<$ nrows $\times$ ncols for sparse matrices)
+        \item \texttt{grb::capacity(container)}: maximum capacity (default: max dimension)
+    \end{itemize}
+    \item \textbf{Basics:} New containers are \textbf{empty}; size is \textbf{fixed}, capacity \textbf{can be increased}
 \end{itemize}
 % Owner: PA
-% Source (ALP_Tutorial.tex - ALP/GraphBLAS Containers):
-% The primary ALP/GraphBLAS container types are \texttt{grb::Vector<T>} and \texttt{grb::Matrix<T>}.
-% \begin{lstlisting}
-% grb::Vector<double> x(100000), y(150000);
-% grb::Matrix<void> A(150000, 100000);
-% \end{lstlisting}
-% ... capacity, size, nnz, default capacities ...
+% Source (ALP_Tutorial.tex - ALP/GraphBLAS Containers)
+\end{frame}
+
+\begin{frame}[fragile]{3.1. Hands-on: Containers}
+\framesubtitle{Exercise 2}
+\vspace{-0.5em}
+\textbf{Exercise 2.} Allocate the following vectors and matrices:
+\begin{itemize}
+    \item \texttt{grb::Vector<double>} \texttt{x}: length 100, capacity 100
+    \item \texttt{grb::Vector<double>} \texttt{y}: length 1\ 000, capacity 1\ 000
+    \item \texttt{grb::Matrix<double>} \texttt{A}: size $(100 \times 1\ 000)$, capacity 1\ 000
+    \item \texttt{grb::Matrix<double>} \texttt{B}: size $(100 \times 1\ 000)$, capacity 5\ 000
+    \item Start from \texttt{alp\_hw.cpp} 
+\begin{lstlisting}[style=terminal, language=bash, basicstyle=\ttfamily\scriptsize\color{terminaltext}] 
+cp alp\_hw.cpp alp\_containers\_ex2.cpp 
+\end{lstlisting}
+    \item \textbf{Hint:} search the documentation for how to override the default capacities
+\end{itemize}
+\textbf{Expected output}:
+\begin{lstlisting}[style=terminal, language=bash, basicstyle=\ttfamily\scriptsize\color{terminaltext}]
+Info: grb::init (reference) called.
+Capacity of x: 100
+Capacity of y: 1000
+Capacity of A: 1000
+Capacity of B: 5000
+Info: grb::finalize (reference) called.
+\end{lstlisting}
+\textbf{Question.} Is overriding the default capacity necessary for all of \texttt{x, y, A} and \texttt{B}?
+% Owner: PA
+% Source (ALP_Tutorial.tex - ALP/GraphBLAS Containers, Exercise 2)
 \end{frame}
 
 \begin{frame}[fragile]{Hands-on: Basic Container I/O (3.2)}
