@@ -284,26 +284,120 @@ Info: grb::finalize (reference) called.
 % Source (ALP_Tutorial.tex - ALP/GraphBLAS Containers, Exercise 2)
 \end{frame}
 
-\begin{frame}[fragile]{Hands-on: Basic Container I/O (3.2)}
+\begin{frame}[fragile]{3.2. Hands-on: Basic Container I/O}
+\framesubtitle{Container primitives and accessing elements}
+ALP/GraphBLAS containers use iterators and custom primitives to manipulate data:
+\\
+\vspace{1em}
+\textbf{Basic container manipulation primitives:}
 \begin{itemize}
-    \item set, setElement, clear
-    \item Iterating and printing
-    \item Reading MatrixMarket via parser
+    \item \texttt{grb::clear(container)}: removes all elements
+    \item \texttt{grb::set(vector,scalar)}: sets all elements to \textit{scalar} (-> dense)
+    \item \texttt{grb::setElement(vector,scalar,index)}: sets element at \textit{index} to \textit{scalar}
 \end{itemize}
+\vspace{1em}
+\textbf{C++ STL-compatible iterators:}
+\begin{lstlisting}[style=code, language=C++, basicstyle=\ttfamily\scriptsize]
+for( const auto &pair : y ) {
+    std::cout << "y[" << pair.first << "]=" << pair.second << "\n";
+}
+\end{lstlisting}
 % Owner: PA
-% Source (ALP_Tutorial.tex - Basic Container I/O):
-% \texttt{grb::set(vector,scalar)} sets all elements; \texttt{grb::setElement} sets one.
-% \begin{lstlisting}
-% for( const auto &pair : y ) {
-%   std::cout << "y[ " << pair.first << " ] = " << pair.second << "\n";
-% }
-% \end{lstlisting}
-% Parser:
-% \begin{lstlisting}
-% #include <graphblas/utils/parser.hpp>
-% grb::utils::MatrixFileReader<double> parser( in, true );
-% grb::buildMatrixUnique(A, parser.begin(SEQUENTIAL), parser.end(SEQUENTIAL), SEQUENTIAL);
-% \end{lstlisting}
+% Source (ALP_Tutorial.tex - Basic Container I/O)
+\end{frame}
+
+\begin{frame}[fragile]{3.2. Hands-on: Basic Container I/O}
+    \framesubtitle{Exercise 3: Container manipulation}
+    \textbf{Exercise 3.} Allocate:
+    \begin{itemize}
+        \item \texttt{grb::Vector<bool>} \texttt{x}, \texttt{y}: length 497, capacities 497 and 1
+        \item \texttt{grb::Matrix<void>} \texttt{A}: size $497 \times 497$, capacity 1727
+        \item Initialize \texttt{y} with \texttt{true} at index 200
+        \item Initialize \texttt{x} with \texttt{false} everywhere
+        \item Print nnz for \texttt{x} and \texttt{y}
+    \end{itemize}
+    Start from \texttt{alp\_containers\_ex2.cpp} 
+\begin{lstlisting}[style=terminal, language=bash, basicstyle=\ttfamily\scriptsize\color{terminaltext}] 
+cp alp\_containers\_ex2.cpp alp\_containers\_ex2.cpp 
+\end{lstlisting}
+    \textbf{Expected output:}
+    \begin{lstlisting}[style=terminal, language=bash, basicstyle=\ttfamily\scriptsize\color{terminaltext}]
+    nonzeroes in x: 497
+    nonzeroes in y: 1
+    \end{lstlisting}
+    \textbf{Bonus question:} Print the capacity of \texttt{y}. Should the value returned be unexpected, considering the specification in the user documentation, is this a bug in ALP?
+% Owner: PA
+% Source (ALP_Tutorial.tex - Basic Container I/O, Exercise 3)
+\end{frame}
+
+
+\begin{frame}[fragile]{3.2. Hands-on: Basic Container I/O}
+    \framesubtitle{Exercise 4: Itterators}
+    \textbf{Exercise 4.} Use output iterators to double-check that \texttt{x} has $497$ values and that all those values equal \texttt{false}:
+    \begin{itemize}
+        \item Use STL-compatible iterators to iterate over \texttt{x}
+        \item Count the number of entries and verify each value is \texttt{false}
+    \end{itemize}
+    Start from \texttt{alp\_containers\_ex3.cpp}
+    \begin{lstlisting}[style=terminal, language=bash, basicstyle=\ttfamily\scriptsize\color{terminaltext}] 
+    cp alp_containers_ex3.cpp alp_containers_ex4.cpp 
+    \end{lstlisting}
+    % Owner: PA
+    % Source (ALP_Tutorial.tex - Basic Container I/O, Exercise 4)
+\end{frame}
+    
+
+    
+\begin{frame}[fragile]{3.2. Hands-on: Basic Container I/O}
+    \framesubtitle{Container file I/O}
+    ALP supports reading sparse matrices from common file formats(e.g. MatrixMarket \texttt{.mtx})
+    \begin{itemize}
+        \item \textbf{MatrixMarket file parser:}
+\begin{lstlisting}[style=code, language=C++, basicstyle=\ttfamily\scriptsize]
+#include <graphblas/utils/parser.hpp>
+std::string in( "matrix_file.mtx" );
+grb::utils::MatrixFileReader< double > parser( in, true );
+const auto iterator = parser.begin();
+std::cout << "First parsed entry: ( " << iterator.i() << ", " << iterator.j() << " ) = " << iterator.v() << "\n";
+\end{lstlisting}
+        \begin{itemize}
+            \item \textbf{Constructor}: \texttt{filename, consecutive\_vertices (use = \texttt{true} for .mtx)}
+            \item \textbf{Sparse iterators}: \texttt{iterator.i()}, \texttt{iterator.j()}, \texttt{iterator.v()}
+        \end{itemize}
+        \item \textbf{Building/loading matrices from files:}
+\begin{lstlisting}[style=code, language=C++, basicstyle=\ttfamily\scriptsize]
+grb::RC rc = grb::buildMatrixUnique( A, parser.begin(grb::SEQUENTIAL), 
+    parser.end(grb::SEQUENTIAL),grb::SEQUENTIAL);
+\end{lstlisting}
+        \item \textbf{Iterator types:} \texttt{SEQUENTIAL} (all elements) vs \texttt{PARALLEL} (subset per process)
+        \item \textbf{Return codes:} \texttt{grb::RC} (error codes) -> \texttt{grb::SUCCESS} on success
+    \end{itemize}
+    % Owner: PA
+    % Source (ALP_Tutorial.tex - Basic Container I/O)
+\end{frame}
+
+\begin{frame}[fragile]{3.2. Hands-on: Basic Container I/O}
+\framesubtitle{Exercise 5: File I/O}
+\textbf{Exercise 5.} Use the \texttt{MatrixFileReader} and its iterators to build \texttt{A} from \texttt{west0497.mtx}:
+\begin{itemize}
+    \item Use \texttt{MatrixFileReader} and \texttt{buildMatrixUnique}
+    \item Print the number of nonzeroes in \texttt{A} after \texttt{buildMatrixUnique}
+    \item Modify the \texttt{main} function to take as the first program argument a path to an .mtx file
+    \item Pass that path to the ALP/GraphBLAS program
+\end{itemize}
+\textbf{Download the west0497 matrix from the SuiteSparse matrix collection:}
+\begin{lstlisting}[style=terminal, language=bash, basicstyle=\ttfamily\scriptsize\color{terminaltext}] 
+wget "https://suitesparse-collection-website.herokuapp.com/MM/HB/west0497.tar.gz" && tar -xzvf west0497.tar.gz
+\end{lstlisting}
+\textbf{Run the application with the path \texttt{./west0497/west0497.mtx}. Expected output:}
+\begin{lstlisting}[style=terminal, language=bash, basicstyle=\ttfamily\scriptsize\color{terminaltext}]
+./a.out ./west0497/west0497.mtx
+First parsed entry: ( 495, 496 ) = 0.897354
+nonzeroes in A: 1727
+\end{lstlisting}
+\textbf{Bonus question:} Why is there no \texttt{grb::set(matrix,scalar)} primitive?
+% Owner: PA
+% Source (ALP_Tutorial.tex - Basic Container I/O, Exercise 5)
 \end{frame}
 
 \begin{frame}[fragile]{Hands-on: Copying, Masking, and Standard Matrices (3.3)}
