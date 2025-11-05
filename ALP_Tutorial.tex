@@ -304,7 +304,7 @@ The former three scalar/vector primitives are dubbed \emph{level 1}, the followi
     \textbf{grb::mxm} - Performs matrix--matrix multiplication; i.e., $C$\textit{+=}$AB$, or $C_{ij}=C_{ij}\textit{+=}\sum_{k}A_{ik}B_{kj}$. If, for a given $i,j$ the $i$th row of $A$ is empty or the $j$th column of $B$ is empty, no output will be appended to $C$-- that is, if $C_{ij}\notin C$, then after executing the primitive no such entry will have been added to $C$, meaning that the sparsity of $C$ is retained and the only fill-in to $C$ is due to non-zero contributions of $AB$. If in-place behaviour is not desired, $C$ must be cleared prior to calling this primitive\footnote{note that while setting $C$ to a dense matrix of all zeroes semantically also results in an out-of-place matrix--matrix multiplication, typically GraphBLAS applications should shy away from forming dense matrices due to their quadratic storage requirements}.\newline
 
     \textbf{grb::set} - This primitive initializes values of a container (vector or matrix) to a specified scalar value or values from another container. 
-    It does not allocate nor free any dynamic memory, but simply sets values in the existing container. \\ newline \\ newline
+    It does not allocate nor free any dynamic memory, but simply sets values in the existing container. \newline \newline
 
     The interface is more flexible that what is described above, since combinations of vectors and scalars and sometimes matrices
     are supported in the single argument lists of the primitives. 

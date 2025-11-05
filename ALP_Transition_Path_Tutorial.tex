@@ -6,56 +6,21 @@ One of these transition paths, and the focus of this tutorial, is ALP's \textbf{
 
 \section{Setup: Installing ALP and Preparing to Use the Solver}\label{sec:setup}
 
-This section explains how to install ALP on a Linux system and compile a simple example. ALP (Algebraic Programming) provides a C++17 library implementing the GraphBLAS interface for linear-algebra-based computations.
+This section explains how to install ALP on a Linux system and compile a simple example. 
+ALP (Algebraic Programming) provides a C++17 library implementing the GraphBLAS interface 
+for linear-algebra-based computations.
 
-\subsection{Installation on Linux}
+\subsection{Installation (see Section \ref{sec:installation})}
 
-\begin{enumerate}
-\item Install prerequisites: Ensure you have a C++11 compatible compiler (e.g. \texttt{g++} 4.8.2 or later) with OpenMP support, CMake (>= 3.13) and GNU Make, plus development headers for libNUMA and POSIX threads. 
-For example, on Debian/Ubuntu:
-\begin{verbatim}
-sudo apt-get install build-essential libnuma-dev libpthread-stubs0-dev cmake
-\end{verbatim}
+Note: Before continuing, complete the installation and build steps described in Section \ref{sec:installation}. 
+These steps ensure that ALP is properly compiled and it can be used as a library.
 
-\item Obtain ALP: Download or clone the ALP repository (from the official GitHub). For instance:
-\begin{verbatim}
-git clone https://github.com/Algebraic-Programming/ALP.git
-\end{verbatim}
-Then enter the repository directory.
-
-\item Build ALP: Create a build directory and invoke the provided bootstrap script to configure the project with CMake, then compile and install:
-\begin{lstlisting}[language=bash, basicstyle=\ttfamily\small, showstringspaces=false]
-$ cd ALP && mkdir build && cd build
-$ export ALP_INSTALL_DIR=../install # Set ALP installation directory
-$ ../bootstrap.sh --prefix=$ALP_INSTALL_DIR # configure the build
-$ make -j # compile the ALP library
-$ make -j install # install to $ALP_INSTALL_DIR
-\end{lstlisting}
-(You can choose a different installation prefix as needed.)
-
-\item Set up environment: After installation, activate the ALP environment by sourcing the script setenv in the install directory:
-\begin{lstlisting}[language=bash, basicstyle=\ttfamily\small, showstringspaces=false]
-$ source $ALP_INSTALL_DIR/bin/setenv
-\end{lstlisting}
-This script updates paths to make ALP's compiler wrapper and libraries available.
-
-\item Compile an example: ALP provides a compiler wrapper \texttt{grbcxx} to compile programs that use the ALP/GraphBLAS API. This wrapper automatically adds the correct include paths and links against the ALP library and its dependencies. For example, to compile the provided sp.cpp sample:
-\begin{lstlisting}[language=bash, basicstyle=\ttfamily\small, showstringspaces=false]
-$ grbcxx ../examples/sp.cpp -o sp_example
-\end{lstlisting}
-By default this produces a sequential program; you can add the option \texttt{-b reference\_omp} to use the OpenMP parallel backend (shared-memory parallelism). The wrapper \texttt{grbcxx} accepts other backends as well (e.g.\ \texttt{-b hybrid} for distributed memory).
-
-\item Run the program: Use the provided runner \texttt{grbrun} to execute the compiled binary. For a simple shared-memory program, running with \texttt{grbrun} is similar to using \texttt{./program} directly. For example:
-\begin{lstlisting}[language=bash, basicstyle=\ttfamily\small, showstringspaces=false]
-$ grbrun ./sp_example
-\end{lstlisting}
-(The \texttt{grbrun} tool is more relevant when using distributed backends or controlling the execution environment; for basic usage, the program can also be run directly.)
-\end{enumerate}
-
-You can also specify a backend with the -b flag. For instance, -b reference builds a sequential version, while -b reference\_omp enables ALP's shared-memory (OpenMP) parallel backend . If you built ALP with distributed-memory support, you might use -b hybrid or -b bsp1d for hybrid or MPI- nstyle backends. In those cases, you would run the program via grbrun (which handles launching multiple processes) – but for this tutorial, we will use a single-process, multi-threaded backend, so running the program normally is fine.
-\\
-
-\textbf{Direct linking option}: If you prefer to compile with your usual compiler, you need to include ALP's headers and link against the ALP libraries manually. For the CG solver transition path, that typically means linking against the sparse solver library (e.g. libspsolver\_shmem\_parallel for the parallel version) and any core ALP libraries it depends on. For example, if ALP is installed in /opt/alp , you might compile with:
+\textbf{Direct linking option}: If you prefer to compile with your usual compiler, 
+you need to include ALP's headers and link against the ALP libraries manually. 
+For the CG solver transition path, that typically means linking against the 
+sparse solver library (e.g. libspsolver\_shmem\_parallel for the parallel version) 
+and any core ALP libraries it depends on. For example, if ALP is installed in /opt/alp, 
+you might compile with:
 
 \begin{lstlisting}[language=bash, basicstyle=\ttfamily\small, showstringspaces=false]
 gcc -I/opt/alp/include -L/opt/alp/lib \
@@ -64,7 +29,9 @@ my_program.c -o my_program
 \end{lstlisting}
 
 
-(ALP's documentation provides details on which libraries to link for each backend [3].) Using grbcxx is recommended for simplicity, but it's good to know what happens under the hood. Now that our environment is set up, let's look at the CG solver API.
+(ALP's documentation provides details on which libraries to link for each backend [3].) 
+Using grbcxx is recommended for simplicity, but it's good to know what happens under the hood. 
+Now that our environment is set up, let's look at the CG solver API.
 
 
 \section{Overview of ALP's Non-Blocking Sparse CG API}\label{sec:api}
@@ -194,25 +161,17 @@ Let’s break down what happens here:
 To compile the above code with ALP, we will use the direct linking option as discussed. 
 \begin{lstlisting}[language=bash, basicstyle=\ttfamily\small, showstringspaces=false]
 g++ example.cpp -o cg_demo \
-  -I $ALP_INSTALL_DIR/include \
-  -L $ALP_INSTALL_DIR/lib \
-  -L $ALP_INSTALL_DIR/lib/sequential \
-  -Wl,-rpath,$ALP_INSTALL_DIR/lib/sequential \
-  -lspsolver_shmem_parallel \
-  -lalp_cspblas_shmem_parallel \
-  -lgraphblas \
-  -lalp_utils \
-  -lksolver \
-  -fopenmp \
-  -lnuma \
-  -no-pie
+-I$ALP_INSTALL_DIR/include \
+-L$ALP_INSTALL_DIR/lib/ -L$ALP_INSTALL_DIR/lib/sequential/ \
+-lspsolver_shmem_parallel -lgraphblas -fopenmp -lnuma
 \end{lstlisting}
 After a successful compile, you can run the program:
-    \begin{lstlisting}[language=bash]
+    \begin{lstlisting}[language=bash,basicstyle=\ttfamily\small, showstringspaces=false]
+    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$ALP_INSTALL_DIR/lib:$ALP_INSTALL_DIR/lib/sequential/ 
     ./cg_demo
     \end{lstlisting}
 It should output something like:
-    \begin{lstlisting}[language=bash]
+    \begin{lstlisting}[language=bash,basicstyle=\ttfamily\small, showstringspaces=false]
     Solution x = [1.00, 2.00, 3.00]
     \end{lstlisting}
 
