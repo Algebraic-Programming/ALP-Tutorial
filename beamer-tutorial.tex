@@ -1,139 +1,330 @@
-\documentclass{beamer}
-\usepackage{graphicx}
-\usepackage{amsmath,amssymb}
-\usepackage{listings}
-\usepackage{hyperref}
+\documentclass[aspectratio=169]{beamer}
+\usetheme{Madrid}
+\usecolortheme{seahorse}
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{footline}[frame number]
 
-\title{Algebraic Programming with GraphBLAS}
-\subtitle{From HPC to GraphBLAS and Tensor Algebra}
-\author{Your Name}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{graphicx}
+\usepackage{amsmath,amssymb,mathtools}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{listings}
+
+% Map common Unicode symbols to LaTeX math (outside listings)
+\usepackage{newunicodechar}
+\newunicodechar{·}{\ensuremath{\cdot}}
+\newunicodechar{⊙}{\ensuremath{\odot}}
+\newunicodechar{ᵀ}{\ensuremath{^{\top}}}
+\newunicodechar{×}{\ensuremath{\times}}
+\newunicodechar{–}{-}
+\newunicodechar{—}{-}
+
+% Listing styles (Unicode-safe for later use)
+\definecolor{terminalback}{rgb}{0.1,0.1,0.1}
+\definecolor{terminaltext}{rgb}{0.9,0.9,0.9}
+\lstdefinestyle{terminal}{
+  backgroundcolor=\color{terminalback},
+  basicstyle=\ttfamily\small\color{terminaltext},
+  frame=single, rulecolor=\color{white}, breaklines=true,
+  captionpos=b, showstringspaces=false,
+  literate={·}{{$\cdot$}}1 {⊙}{{$\odot$}}1 {ᵀ}{{$^\top$}}1 {×}{{$\times$}}1 {‐}{{-}}1 {–}{{-}}1 {—}{{-}}1
+}
+\lstdefinestyle{code}{
+  backgroundcolor=\color[rgb]{0.95,0.95,0.95},
+  basicstyle=\ttfamily\small, frame=single, breaklines=true,
+  rulecolor=\color{black}, numbers=none, keepspaces=true, captionpos=b, tabsize=2,
+  language=C++,
+  literate={·}{{$\cdot$}}1 {⊙}{{$\odot$}}1 {ᵀ}{{$^\top$}}1 {×}{{$\times$}}1 {‐}{{-}}1 {“}{{"`}}1 {”}{{'"}}1
+}
+
+\title{Algebraic Programming (ALP) Tutorial}
+\subtitle{From HPC to GraphBLAS and Transition Paths}
+\author{ALP Team}
 \date{\today}
 
 \begin{document}
-
 \frame{\titlepage}
 
-\section{Introduction to HPC and BLAS/LAPACK}
+% =========================
+% Monday 10 Nov
+% =========================
+\section{Monday 10 Nov}
 
-\begin{frame}{Historical Context: HPC and Linear Algebra}
+\subsection{1) Introduction to GraphBLAS and ALP}
+\begin{frame}{Introduction to GraphBLAS and ALP}
 \begin{itemize}
-  \item BLAS and LAPACK as foundational HPC libraries
-  \item Focus on dense operations like matrix-matrix multiply (GEMM)
-  \item Optimization strategies: SIMD, cache tiling, loop unrolling
-  \item Limitations for irregular/sparse workloads (e.g., graphs)
+  \item Goals of the tutorial
+  \item What is ALP and GraphBLAS
+  \item Overview of containers, semirings, and primitives
 \end{itemize}
+% Owner: TODO
+% Source (introduction.tex):
+% \section{Introduction}\label{sec:introduction}
+% ALgebraic Programming, or ALP for short, encompasses software technologies that allow
+% programming with explicit algebraic structures combined with their automated parallelisation and optimisation.
+% This document is a tutorial to the C++ interface to ALP distributed at \url{https://github.com/Algebraic-Programming/ALP}.
+% ALP provides mechanisms by which auto-parallelisation of sequential, data-centric, and algebraic C++ programs proceeds...
 \end{frame}
 
-\section{The GraphBLAS Standard}
-
-\begin{frame}{Motivation and Concept}
+\subsection{2) Installation on Linux, demos}
+\begin{frame}[fragile]{Installation on Linux (ALP)}
 \begin{itemize}
-  \item Graph algorithms expressed as sparse linear algebra
-  \item Semiring abstraction: $\langle D, \oplus, \otimes \rangle$
-  \item Customizable algebra for graph-specific semantics
+  \item Prerequisites: compiler, OpenMP, CMake, NUMA, pthreads
+  \item Clone, bootstrap, build, install
+  \item Environment setup and grbcxx/grbrun
 \end{itemize}
+% Owner: TODO
+% Source (ALP_Tutorial.tex - Installation on Linux):
+% \section{Installation on Linux}\label{sec:installation}
+% \begin{enumerate}
+% \item \textbf{Install prerequisites} ... Debian/Ubuntu:
+% \begin{verbatim}
+% sudo apt-get install build-essential libnuma-dev libpthread-stubs0-dev cmake;
+% \end{verbatim}
+% \item \textbf{Obtain ALP} ... git clone https://github.com/Algebraic-Programming/ALP.git
+% \item \textbf{Build ALP}
+% \begin{lstlisting}[language=bash]
+% $ cd ALP && mkdir build && cd build
+% $ ../bootstrap.sh --prefix=../install
+% $ make -j
+% $ make install
+% \end{lstlisting}
+% \item \textbf{Set up environment}:
+% \begin{lstlisting}[language=bash]
+% $ source ../install/bin/setenv
+% \end{lstlisting}
+% \item \textbf{Compile an example}:
+% \begin{lstlisting}[language=bash]
+% $ grbcxx ../examples/sp.cpp -o sp_example
+% \end{lstlisting}
+% \end{enumerate}
 \end{frame}
 
-\begin{frame}{Example Semirings and Use Cases}
+\subsection{3) Hands-on: containers, I/O, copying, masking, standard matrices (3.1–3.3)}
+\begin{frame}[fragile]{Hands-on: Containers and I/O (3.1)}
 \begin{itemize}
-  \item Boolean semiring: logical OR/AND for BFS
-  \item (min, +) semiring for shortest paths
-  \item Arithmetic semiring for numeric computation
+  \item grb::Vector, grb::Matrix basics
+  \item Capacity, nnz, sizes
+  \item Iterators and output
 \end{itemize}
+% Owner: TODO
+% Source (ALP_Tutorial.tex - ALP/GraphBLAS Containers):
+% The primary ALP/GraphBLAS container types are \texttt{grb::Vector<T>} and \texttt{grb::Matrix<T>}.
+% \begin{lstlisting}
+% grb::Vector<double> x(100000), y(150000);
+% grb::Matrix<void> A(150000, 100000);
+% \end{lstlisting}
+% ... capacity, size, nnz, default capacities ...
 \end{frame}
 
-\section{Algebraic Programming with ALP-GraphBLAS}
-
-\begin{frame}{The ALP Framework}
+\begin{frame}[fragile]{Hands-on: Basic Container I/O (3.2)}
 \begin{itemize}
-  \item C++ template library implementing GraphBLAS
-  \item STL-style syntax with automatic parallelization
-  \item Backends: sequential, OpenMP, LPF (distributed)
+  \item set, setElement, clear
+  \item Iterating and printing
+  \item Reading MatrixMarket via parser
 \end{itemize}
+% Source (ALP_Tutorial.tex - Basic Container I/O):
+% \texttt{grb::set(vector,scalar)} sets all elements; \texttt{grb::setElement} sets one.
+% \begin{lstlisting}
+% for( const auto &pair : y ) {
+%   std::cout << "y[ " << pair.first << " ] = " << pair.second << "\n";
+% }
+% \end{lstlisting}
+% Parser:
+% \begin{lstlisting}
+% #include <graphblas/utils/parser.hpp>
+% grb::utils::MatrixFileReader<double> parser( in, true );
+% grb::buildMatrixUnique(A, parser.begin(SEQUENTIAL), parser.end(SEQUENTIAL), SEQUENTIAL);
+% \end{lstlisting}
 \end{frame}
 
-\begin{frame}[fragile]{GraphBLAS BFS Example (C API)}
-\begin{lstlisting}[language=C]
-GrB_Info BFS(GrB_Vector *v, GrB_Matrix A, GrB_Index s) {
-  GrB_Vector q;
-  GrB_Vector_new(&q, GrB_BOOL, n);
-  GrB_Vector_setElement(q, true, s);
-  do {
-    level++;
-    GrB_apply(*v, GrB_NULL, GrB_PLUS_INT32,
-              GrB_SECOND_INT32, q, level, GrB_NULL);
-    GrB_vxm(q, *v, GrB_NULL, GrB_LOR_LAND_SEMIRING_BOOL,
-            q, A, GrB_DESC_RC);
-  } while (nvals > 0);
-  GrB_free(&q);
-  return GrB_SUCCESS;
-}
-\end{lstlisting}
-\end{frame}
-
-\section{Dense and Tensor Algebra Extensions}
-
-\begin{frame}{Structured Dense Algebra}
+\begin{frame}[fragile]{Hands-on: Copying, Masking, and Standard Matrices (3.3)}
 \begin{itemize}
-  \item Extending ALP to dense linear algebra
-  \item Compile-time structure annotations (symmetry, banded, etc.)
-  \item More efficient code generation for structured cases
+  \item Copy with resize/execute phases
+  \item Masks controlling writes
+  \item Factory: identity, eye, diag
 \end{itemize}
+% Source (ALP_Tutorial.tex - Copying, Masking, and Standard Matrices):
+% \begin{lstlisting}
+% grb::Matrix<double> B(497, 497);
+% grb::RC rc = grb::set( x, y );
+% rc = rc ? rc : grb::set( B, A, grb::RESIZE );
+% rc = rc ? rc : grb::set( B, A, grb::EXECUTE );
+% \end{lstlisting}
+% Mask example:
+% \begin{lstlisting}
+% grb::RC rc = grb::set( x, y, false );
+% \end{lstlisting}
+% Factory:
+% \begin{lstlisting}
+% #include <graphblas/algorithms/matrix_factory.hpp>
+% const auto I = grb::algorithms::matrices<double>::identity(n);
+% \end{lstlisting}
 \end{frame}
 
-\begin{frame}{Towards Tensor Algebra}
+\subsection{4) Introduction to primitives (3.4)}
+\begin{frame}{Primitives overview (3.4)}
 \begin{itemize}
-  \item Generalizing GraphBLAS to multi-dimensional tensors
-  \item Tensor contractions using extended semirings
-  \item Exploring performance optimizations for tensor algebra
+  \item Level-1: foldl/foldr, dot, eWiseAdd/Mul
+  \item Level-2: mxv, vxm
+  \item Level-3: mxm
 \end{itemize}
+% Source (ALP_Tutorial.tex - Numerical Linear Algebra):
+% Primitives: \texttt{grb::foldl}, \texttt{grb::dot}, \texttt{grb::eWiseAdd}, \texttt{grb::eWiseMul},
+% \texttt{grb::mxv}, \texttt{grb::vxm}, \texttt{grb::mxm}.
+% \begin{lstlisting}
+% auto plusTimes = grb::semirings::plusTimes<double>();
+% grb::mxv(y, A, x, plusTimes);
+% \end{lstlisting}
 \end{frame}
 
-\section{Future Work: Performance Modeling}
-
-\begin{frame}{BSP-based Performance Model}
+\subsection{5) Exercise 8}
+\begin{frame}[fragile]{Exercise 8}
 \begin{itemize}
-  \item Integrate HBSP model with ALP
-  \item Assign costs to computation, memory, and communication
-  \item Predict performance on hierarchical hardware
+  \item Build small A and x
+  \item Compute y=Ax, z=x⊙y, d=xᵀx
+  \item Print results
 \end{itemize}
+% Source (ALP_Tutorial.tex - Exercise 8):
+% One example:
+% A = [ [0,1,2], [0,3,4], [5,6,0] ], x = [1,2,3]^T
+% Expected:
+% \begin{lstlisting}[language=bash]
+% x = [ 1, 2, 3 ]
+% y = A·x = [ 7, 18, 17 ]
+% z = x ⊙ y = [ 7, 36, 51 ]
+% dot(x,x) = 14
+% \end{lstlisting}
 \end{frame}
 
-\section{Hands-On: C++ and Python Wrappers}
-
-\begin{frame}[fragile]{Python Example: Matrix Multiply}
-\begin{lstlisting}[language=Python]
-from alp import Matrix, Semiring
-A = Matrix.from_dense([[1,0],[0,1]])
-B = Matrix.from_dense([[2,3],[4,5]])
-C = A @ B  # Default semiring
-print(C.to_dense())
-\end{lstlisting}
-\end{frame}
-
-\begin{frame}[fragile]{C++ Example}
-\begin{lstlisting}[language=C++]
-#include <alp/matrix.hpp>
-using namespace alp;
-int main() {
-  Matrix<int> A({{1,0},{0,1}});
-  Matrix<int> B({{2,3},{4,5}});
-  auto C = A * B;
-  C.print();
-}
-\end{lstlisting}
-\end{frame}
-
-\section{Conclusion}
-
-\begin{frame}{Summary}
+\subsection{6) Closure, transition paths, python mxv examples}
+\begin{frame}{Transition paths and Python mxv}
 \begin{itemize}
-  \item Evolution from BLAS to GraphBLAS for graph algorithms
-  \item Algebraic Programming with ALP enables high-level abstraction and performance
-  \item Extensions to dense/tensor algebra and performance modeling ongoing
+  \item ALP transition paths overview
+  \item Re-linking existing codes
+  \item Python examples
 \end{itemize}
+% Source (ALP_Transition_Path_Tutorial.tex - Intro):
+% ALP ... transition path APIs ... drop-in replacements ... re-link your program against ALP's libraries ...
 \end{frame}
 
-\frame{\titlepage}
+\subsection{7) Ising Machine, new solvers}
+\begin{frame}{Ising Machine, new solvers}
+\begin{itemize}
+  \item Placeholder for Ising Machine content
+  \item New solver directions
+\end{itemize}
+% Owner: TODO
+\end{frame}
+
+% =========================
+% Tuesday 11 Nov
+% =========================
+\section{Tuesday 11 Nov}
+
+\subsection{8) Finish Exercise 8}
+\begin{frame}{Finish Exercise 8}
+\begin{itemize}
+  \item Review results and pitfalls
+  \item Alternative builds and descriptors
+\end{itemize}
+% Owner: TODO
+\end{frame}
+
+\subsection{9) Semirings, monoids, operators (add exercise: shortest path)}
+\begin{frame}[fragile]{Semirings, monoids, operators}
+\begin{itemize}
+  \item Defining and using semirings
+  \item Built-ins: plusTimes, minPlus, boolean
+  \item Exercise: shortest path (min-plus)
+\end{itemize}
+% Source (ALP_Tutorial.tex - Semirings and Algebraic Operations):
+% A semiring consists of a pair of operations ...
+% \begin{lstlisting}[language=C++]
+% using Add = grb::operators::add<double>;
+% using AddMonoid = grb::Monoid<Add, grb::identities::zero>;
+% using Mul = grb::operators::mul<double>;
+% using PlusTimes = grb::Semiring<Mul, AddMonoid>;
+% \end{lstlisting}
+\end{frame}
+
+\subsection{10) Solvers, transition path, Python API, ABI}
+\begin{frame}{Solvers and transition path}
+\begin{itemize}
+  \item Sparse CG solver API
+  \item Preconditioners
+  \item ABI and Python API notes
+\end{itemize}
+% Source (ALP_Transition_Path_Tutorial.tex - API):
+% sparse_cg_init / set_preconditioner / solve / destroy — CRS inputs; non-blocking engine, synchronous API.
+\end{frame}
+
+\subsection{11) Hands-on: Section 8; CG example; Python example}
+\begin{frame}[fragile]{Hands-on: CG example}
+\begin{itemize}
+  \item Build CRS matrix
+  \item Call CG init/solve/destroy
+  \item Validate solution
+\end{itemize}
+% Source (ALP_Transition_Path_Tutorial.tex - Example):
+% \begin{lstlisting}[language=C++]
+% // A (CRS), b, x; sparse_cg_init_dii(&handle, n, A_vals, A_cols, A_offs);
+% // sparse_cg_solve_dii(handle, x, b); sparse_cg_destroy_dii(handle);
+% \end{lstlisting}
+\end{frame}
+
+\subsection{12) Stretch goal: SPMD and bsp1d backend}
+\begin{frame}{SPMD and bsp1d backend (stretch)}
+\begin{itemize}
+  \item Backend concepts
+  \item Launching distributed runs
+\end{itemize}
+% Owner: TODO
+\end{frame}
+
+\subsection{13) Performance model, high level intro and results}
+\begin{frame}{Performance model}
+\begin{itemize}
+  \item BSP/HBSP overview
+  \item Cost components and examples
+\end{itemize}
+% Owner: TODO
+% (Beamer draft had "BSP-based Performance Model"; integrate later.)
+\end{frame}
+
+\subsection{14) SPMD execution, Replica exchange}
+\begin{frame}{SPMD execution, Replica exchange}
+\begin{itemize}
+  \item Concepts and API sketch
+  \item Example workflow
+\end{itemize}
+% Owner: TODO
+\end{frame}
+
+% =========================
+% Wednesday 12 Nov
+% =========================
+\section{Wednesday 12 Nov}
+
+\subsection{15) WIP overview: dense backend, tensor, stencil, EM simulations}
+\begin{frame}{WIP overview}
+\begin{itemize}
+  \item Dense backend status
+  \item Tensor/stencil/EM simulation directions
+\end{itemize}
+% Owner: TODO
+\end{frame}
+
+\subsection{16) Deep technical? Future work (autodiff)}
+\begin{frame}{Future work (autodiff)}
+\begin{itemize}
+  \item Autodiff integration ideas
+  \item Open problems and roadmap
+\end{itemize}
+% Owner: TODO
+\end{frame}
 
 \end{document}
