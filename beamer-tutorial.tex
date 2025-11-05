@@ -26,18 +26,18 @@
 \definecolor{terminalback}{rgb}{0.1,0.1,0.1}
 \definecolor{terminaltext}{rgb}{0.9,0.9,0.9}
 \lstdefinestyle{terminal}{
-  backgroundcolor=\color{terminalback},
-  basicstyle=\ttfamily\small\color{terminaltext},
-  frame=single, rulecolor=\color{white}, breaklines=true,
-  captionpos=b, showstringspaces=false,
-  literate={·}{{$\cdot$}}1 {⊙}{{$\odot$}}1 {ᵀ}{{$^\top$}}1 {×}{{$\times$}}1 {‐}{{-}}1 {–}{{-}}1 {—}{{-}}1
+    backgroundcolor=\color{terminalback},
+    basicstyle=\ttfamily\small\color{terminaltext},
+    frame=single, rulecolor=\color{white}, breaklines=true,
+    captionpos=b, showstringspaces=false,
+    literate={·}{{$\cdot$}}1 {⊙}{{$\odot$}}1 {ᵀ}{{$^\top$}}1 {×}{{$\times$}}1 {‐}{{-}}1 {–}{{-}}1 {—}{{-}}1
 }
 \lstdefinestyle{code}{
-  backgroundcolor=\color[rgb]{0.95,0.95,0.95},
-  basicstyle=\ttfamily\small, frame=single, breaklines=true,
-  rulecolor=\color{black}, numbers=none, keepspaces=true, captionpos=b, tabsize=2,
-  language=C++,
-  literate={·}{{$\cdot$}}1 {⊙}{{$\odot$}}1 {ᵀ}{{$^\top$}}1 {×}{{$\times$}}1 {‐}{{-}}1 {“}{{"`}}1 {”}{{'"}}1
+    backgroundcolor=\color[rgb]{0.95,0.95,0.95},
+    basicstyle=\ttfamily\small, frame=single, breaklines=true,
+    rulecolor=\color{black}, numbers=none, keepspaces=true, captionpos=b, tabsize=2,
+    language=C++,
+    literate={·}{{$\cdot$}}1 {⊙}{{$\odot$}}1 {ᵀ}{{$^\top$}}1 {×}{{$\times$}}1 {‐}{{-}}1 {“}{{"`}}1 {”}{{'"}}1
 }
 
 \title{Algebraic Programming (ALP) Tutorial}
@@ -56,27 +56,24 @@
 \subsection{1) Introduction to GraphBLAS and ALP}
 \begin{frame}{Introduction to GraphBLAS and ALP}
 \begin{itemize}
-  \item Goals of the tutorial
-  \item What is ALP and GraphBLAS
-  \item Overview of containers, semirings, and primitives
+    \item Goals of the tutorial
+    \item What is ALP and GraphBLAS
+    \item Overview of containers, semirings, and primitives
 \end{itemize}
-% Owner: TODO
+% Owner: DJ
 % Source (introduction.tex):
 % \section{Introduction}\label{sec:introduction}
-% ALgebraic Programming, or ALP for short, encompasses software technologies that allow
-% programming with explicit algebraic structures combined with their automated parallelisation and optimisation.
-% This document is a tutorial to the C++ interface to ALP distributed at \url{https://github.com/Algebraic-Programming/ALP}.
-% ALP provides mechanisms by which auto-parallelisation of sequential, data-centric, and algebraic C++ programs proceeds...
+% ALgebraic Programming, or ALP for short, encompasses software technologies...
 \end{frame}
 
 \subsection{2) Installation on Linux, demos}
 \begin{frame}[fragile]{Installation on Linux (ALP)}
 \begin{itemize}
-  \item Prerequisites: compiler, OpenMP, CMake, NUMA, pthreads
-  \item Clone, bootstrap, build, install
-  \item Environment setup and grbcxx/grbrun
+    \item Prerequisites: compiler, OpenMP, CMake, NUMA, pthreads
+    \item Clone, bootstrap, build, install
+    \item Environment setup and grbcxx/grbrun
 \end{itemize}
-% Owner: TODO
+% Owner: PA
 % Source (ALP_Tutorial.tex - Installation on Linux):
 % \section{Installation on Linux}\label{sec:installation}
 % \begin{enumerate}
@@ -106,11 +103,11 @@
 \subsection{3) Hands-on: containers, I/O, copying, masking, standard matrices (3.1–3.3)}
 \begin{frame}[fragile]{Hands-on: Containers and I/O (3.1)}
 \begin{itemize}
-  \item grb::Vector, grb::Matrix basics
-  \item Capacity, nnz, sizes
-  \item Iterators and output
+    \item grb::Vector, grb::Matrix basics
+    \item Capacity, nnz, sizes
+    \item Iterators and output
 \end{itemize}
-% Owner: TODO
+% Owner: PA
 % Source (ALP_Tutorial.tex - ALP/GraphBLAS Containers):
 % The primary ALP/GraphBLAS container types are \texttt{grb::Vector<T>} and \texttt{grb::Matrix<T>}.
 % \begin{lstlisting}
@@ -122,10 +119,11 @@
 
 \begin{frame}[fragile]{Hands-on: Basic Container I/O (3.2)}
 \begin{itemize}
-  \item set, setElement, clear
-  \item Iterating and printing
-  \item Reading MatrixMarket via parser
+    \item set, setElement, clear
+    \item Iterating and printing
+    \item Reading MatrixMarket via parser
 \end{itemize}
+% Owner: PA
 % Source (ALP_Tutorial.tex - Basic Container I/O):
 % \texttt{grb::set(vector,scalar)} sets all elements; \texttt{grb::setElement} sets one.
 % \begin{lstlisting}
@@ -143,10 +141,11 @@
 
 \begin{frame}[fragile]{Hands-on: Copying, Masking, and Standard Matrices (3.3)}
 \begin{itemize}
-  \item Copy with resize/execute phases
-  \item Masks controlling writes
-  \item Factory: identity, eye, diag
+    \item Copy with resize/execute phases
+    \item Masks controlling writes
+    \item Factory: identity, eye, diag
 \end{itemize}
+% Owner: PA
 % Source (ALP_Tutorial.tex - Copying, Masking, and Standard Matrices):
 % \begin{lstlisting}
 % grb::Matrix<double> B(497, 497);
@@ -168,10 +167,11 @@
 \subsection{4) Introduction to primitives (3.4)}
 \begin{frame}{Primitives overview (3.4)}
 \begin{itemize}
-  \item Level-1: foldl/foldr, dot, eWiseAdd/Mul
-  \item Level-2: mxv, vxm
-  \item Level-3: mxm
+    \item Level-1: foldl/foldr, dot, eWiseAdd/Mul
+    \item Level-2: mxv, vxm
+    \item Level-3: mxm
 \end{itemize}
+% Owner: AJ
 % Source (ALP_Tutorial.tex - Numerical Linear Algebra):
 % Primitives: \texttt{grb::foldl}, \texttt{grb::dot}, \texttt{grb::eWiseAdd}, \texttt{grb::eWiseMul},
 % \texttt{grb::mxv}, \texttt{grb::vxm}, \texttt{grb::mxm}.
@@ -184,10 +184,11 @@
 \subsection{5) Exercise 8}
 \begin{frame}[fragile]{Exercise 8}
 \begin{itemize}
-  \item Build small A and x
-  \item Compute y=Ax, z=x⊙y, d=xᵀx
-  \item Print results
+    \item Build small A and x
+    \item Compute y=Ax, z=x⊙y, d=xᵀx
+    \item Print results
 \end{itemize}
+% Owner: DJ
 % Source (ALP_Tutorial.tex - Exercise 8):
 % One example:
 % A = [ [0,1,2], [0,3,4], [5,6,0] ], x = [1,2,3]^T
@@ -203,10 +204,11 @@
 \subsection{6) Closure, transition paths, python mxv examples}
 \begin{frame}{Transition paths and Python mxv}
 \begin{itemize}
-  \item ALP transition paths overview
-  \item Re-linking existing codes
-  \item Python examples
+    \item ALP transition paths overview
+    \item Re-linking existing codes
+    \item Python examples
 \end{itemize}
+% Owner: DJ & AJ
 % Source (ALP_Transition_Path_Tutorial.tex - Intro):
 % ALP ... transition path APIs ... drop-in replacements ... re-link your program against ALP's libraries ...
 \end{frame}
@@ -214,33 +216,34 @@
 \subsection{7) Ising Machine, new solvers}
 \begin{frame}{Ising Machine, new solvers}
 \begin{itemize}
-  \item Placeholder for Ising Machine content
-  \item New solver directions
+    \item Placeholder for Ising Machine content
+    \item New solver directions
 \end{itemize}
-% Owner: TODO
+% Owner: DJ
 \end{frame}
 
 % =========================
 % Tuesday 11 Nov
 % =========================
 \section{Tuesday 11 Nov}
-
 \subsection{8) Finish Exercise 8}
 \begin{frame}{Finish Exercise 8}
 \begin{itemize}
-  \item Review results and pitfalls
-  \item Alternative builds and descriptors
+    \item Review results and pitfalls
+    \item Alternative builds and descriptors
 \end{itemize}
-% Owner: TODO
+% Owner: DJ
 \end{frame}
 
 \subsection{9) Semirings, monoids, operators (add exercise: shortest path)}
 \begin{frame}[fragile]{Semirings, monoids, operators}
 \begin{itemize}
-  \item Defining and using semirings
-  \item Built-ins: plusTimes, minPlus, boolean
-  \item Exercise: shortest path (min-plus)
+    \item Defining and using semirings
+    \item Built-ins: plusTimes, minPlus, boolean
+    \item Exercise: shortest path (min-plus)
 \end{itemize}
+% Owner: AJ 
+% TODO: add exercise "shortest path"
 % Source (ALP_Tutorial.tex - Semirings and Algebraic Operations):
 % A semiring consists of a pair of operations ...
 % \begin{lstlisting}[language=C++]
@@ -254,10 +257,11 @@
 \subsection{10) Solvers, transition path, Python API, ABI}
 \begin{frame}{Solvers and transition path}
 \begin{itemize}
-  \item Sparse CG solver API
-  \item Preconditioners
-  \item ABI and Python API notes
+    \item Sparse CG solver API
+    \item Preconditioners
+    \item ABI and Python API notes
 \end{itemize}
+% Owner: DJ
 % Source (ALP_Transition_Path_Tutorial.tex - API):
 % sparse_cg_init / set_preconditioner / solve / destroy — CRS inputs; non-blocking engine, synchronous API.
 \end{frame}
@@ -265,10 +269,11 @@
 \subsection{11) Hands-on: Section 8; CG example; Python example}
 \begin{frame}[fragile]{Hands-on: CG example}
 \begin{itemize}
-  \item Build CRS matrix
-  \item Call CG init/solve/destroy
-  \item Validate solution
+    \item Build CRS matrix
+    \item Call CG init/solve/destroy
+    \item Validate solution
 \end{itemize}
+% Owner: DJ
 % Source (ALP_Transition_Path_Tutorial.tex - Example):
 % \begin{lstlisting}[language=C++]
 % // A (CRS), b, x; sparse_cg_init_dii(&handle, n, A_vals, A_cols, A_offs);
@@ -279,29 +284,28 @@
 \subsection{12) Stretch goal: SPMD and bsp1d backend}
 \begin{frame}{SPMD and bsp1d backend (stretch)}
 \begin{itemize}
-  \item Backend concepts
-  \item Launching distributed runs
+    \item Backend concepts
+    \item Launching distributed runs
 \end{itemize}
-% Owner: TODO
+% Owner: AJ  % TODO: install lpf
 \end{frame}
 
 \subsection{13) Performance model, high level intro and results}
 \begin{frame}{Performance model}
 \begin{itemize}
-  \item BSP/HBSP overview
-  \item Cost components and examples
+    \item BSP/HBSP overview
+    \item Cost components and examples
 \end{itemize}
-% Owner: TODO
-% (Beamer draft had "BSP-based Performance Model"; integrate later.)
+% Owner: PA/
 \end{frame}
 
 \subsection{14) SPMD execution, Replica exchange}
 \begin{frame}{SPMD execution, Replica exchange}
 \begin{itemize}
-  \item Concepts and API sketch
-  \item Example workflow
+    \item Concepts and API sketch
+    \item Example workflow
 \end{itemize}
-% Owner: TODO
+% Owner: GG
 \end{frame}
 
 % =========================
@@ -312,19 +316,19 @@
 \subsection{15) WIP overview: dense backend, tensor, stencil, EM simulations}
 \begin{frame}{WIP overview}
 \begin{itemize}
-  \item Dense backend status
-  \item Tensor/stencil/EM simulation directions
+    \item Dense backend status
+    \item Tensor/stencil/EM simulation directions
 \end{itemize}
-% Owner: TODO
+% Owner: DJ
 \end{frame}
 
 \subsection{16) Deep technical? Future work (autodiff)}
 \begin{frame}{Future work (autodiff)}
 \begin{itemize}
-  \item Autodiff integration ideas
-  \item Open problems and roadmap
+    \item Autodiff integration ideas
+    \item Open problems and roadmap
 \end{itemize}
-% Owner: TODO
+% Owner: DJ
 \end{frame}
 
 \end{document}
