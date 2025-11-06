@@ -12,6 +12,9 @@
 \usepackage{hyperref}
 \usepackage{xcolor}
 \usepackage{listings}
+% Simple diagram support
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning}
 
 \newcommand{\PA}[1]{{\textcolor{cyan}{[{\bfseries PA:} #1]}}}
 \newcommand{\DeJ}[1]{{\textcolor{magenta}{[{\bfseries DJ:} #1]}}} % DJ was taken!
@@ -45,6 +48,33 @@
     language=C++,
     literate={·}{{$\cdot$}}1 {⊙}{{$\odot$}}1 {ᵀ}{{$^\top$}}1 {×}{{$\times$}}1 {‐}{{-}}1 {“}{{"`}}1 {”}{{'"}}1
 }
+
+
+\lstdefinestyle{cpp-rich}{
+  language=C++,
+  basicstyle=\ttfamily\scriptsize,
+  keywordstyle=\color{blue}\bfseries,
+  identifierstyle=\color{black},
+  commentstyle=\color{gray}\itshape,
+  stringstyle=\color{green!50!black},
+  morekeywords={nullptr,override,final,constexpr},
+  showstringspaces=false,
+  upquote=true,
+  frame=single,
+  rulecolor=\color{black},
+  breaklines=true,
+  columns=fullflexible,
+  keepspaces=true,
+  tabsize=2,
+  backgroundcolor=\color[rgb]{0.95,0.95,0.95},
+  literate={·}{{$\cdot$}}1 {⊙}{{$\odot$}}1 {ᵀ}{{$^\top$}}1 {×}{{$\times$}}1 {‐}{{-}}1 {–}{{-}}1 {—}{{-}}1 {“}{{"`}}1 {”}{{'"}}1
+}
+% make it the default
+\lstset{style=cpp-rich}
+% alias macro (use in optional args: \begin{lstlisting}[\cpplistingstyle])
+\newcommand{\cpplistingstyle}{style=cpp-rich}
+% convenience environment: \begin{cppcode} ... \end{cppcode}
+\lstnewenvironment{cppcode}[1][]{\lstset{style=cpp-rich,#1}}{}
 
 \title{Algebraic Programming (ALP) Tutorial}
 \subtitle{From HPC to GraphBLAS and Transition Paths}
@@ -146,9 +176,41 @@
             are known to the backends and propagate from top to bottom of the algorithm
     \end{itemize}
 \end{itemize}
+
 % Owner: DJ
-% TODO: add pipeline diagram: User code → algebra → backend → hardware
-% Source: ALP_Tutorial.tex (intro), alp_graphblas_tutorial.txt (ALP focus)
+\end{frame}
+
+% Slide 2b (graphic)
+\begin{frame}{ALP in One Slide: Programming Model and Backends (Graphic)}
+\centering
+\scriptsize
+\begin{tikzpicture}[
+  node distance=8mm and 6mm,
+  mainbox/.style={rounded corners, draw, very thick, align=center, inner sep=2pt, minimum height=0.75cm, text width=.56\linewidth},
+  sidebox/.style={rounded corners, draw, very thick, align=left, inner sep=2pt, text width=.18\linewidth},
+  arrow/.style={-{Latex[length=1.6mm,width=1.6mm]}, very thick, shorten >=6pt, shorten <=6pt}
+]
+  % Main vertical flow (compact stack)
+  \node[mainbox, fill=blue!10] (user) {User Algorithm (C++ via ALP/GraphBLAS API, or Python bindings)};
+  \node[mainbox, fill=cyan!10, below=8mm of user] (api) {GraphBLAS Algebraic API: Vectors/Matrix containers, Operators/Monoids/Semirings, Masks/Descriptors};
+  % Compile-time traits note placed between API and Backends
+  \node[mainbox, fill=yellow!15, below=8mm of api] (traits) {Compile-time traits \& algebraic properties propagate down (types, identities, associativity, commutativity, idempotence)};
+  \node[mainbox, fill=green!12, below=8mm of traits] (backends) {Backend selection (same source, consistent semantics):\ \texttt{reference}, \texttt{reference\_omp}, nonblocking, bsp1d, dense-dispatch (WIP), tensor (exp.)};
+  \node[mainbox, fill=orange!15, below=8mm of backends] (exec) {Optimized execution: fusion, mask-aware scheduling, blocking/tiling, kernel dispatch (mxv/vxm, mxm, eWise*, reductions), runtime/platform (CPU/OpenMP, LPF, BLAS path)};
+
+  \draw[arrow] (user) -- (api);
+  \draw[arrow] (backends) -- (exec);
+
+  % Side inputs/metadata
+  \node[sidebox, dashed, draw=gray, fill=white, right=2mm of api] (desc) {Descriptors \& Masks\\ replace, accumulate, transpose};
+  \draw[arrow, dashed] (desc.west) -- (api.east);
+
+  \node[sidebox, dashed, draw=gray, fill=white, left=2mm of api] (io) {Parsers \& Builders\\ MatrixMarket, buildMatrixUnique};
+  \draw[arrow, dashed] (io.east) -- (api.west);
+
+  \draw[arrow] (api.south) -- (traits.north);
+  \draw[arrow] (traits.south) -- (backends.north);
+\end{tikzpicture}
 \end{frame}
 
 % Slide 3
@@ -583,9 +645,9 @@ nonzeroes in A: 1727
 \subsection{5) Exercise 8}
 \begin{frame}[fragile]{Exercise 8}
 \begin{itemize}
-    \item Build small A and x
-    \item Compute y=Ax, z=x⊙y, d=xᵀx
-    \item Print results
+  \item Build small $A$ and $x$
+  \item Compute $y = A x$, $z = x \odot y$, $d = x^{\top} x$
+  \item Print results
 \end{itemize}
 % Owner: DJ
 % Source (ALP_Tutorial.tex - Exercise 8):
@@ -599,6 +661,123 @@ nonzeroes in A: 1727
 % dot(x,x) = 14
 % \end{lstlisting}
 \end{frame}
+
+% Exercise 8 details from ALP_Tutorial.tex
+\begin{frame}[fragile]{Exercise 8: Problem statement}
+Given the matrix $A$ and vector $x$ below, compute
+\[ y = A\cdot x, \quad z = x \odot y, \quad d = x^{\top} x. \]
+\vspace{0.5em}
+\[
+ A = \begin{bmatrix}
+ 0 & 1 & 2 \\
+ 0 & 3 & 4 \\
+ 5 & 6 & 0
+ \end{bmatrix}, \qquad
+ x = \begin{bmatrix} 1 \\ 2 \\ 3 \end{bmatrix}.
+\]
+\vspace{0.5em}
+  \textbf{Expected output:}
+\begin{lstlisting}[]
+x = [ 1, 2, 3 ]
+y = A·x = [ 7, 18, 17 ]
+z = x ⊙ y = [ 7, 36, 51 ]
+dot(x,x) = 14
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Exercise 8: Starter code (C++)}
+\framesubtitle{Hands-on: fill the TODOs to make it run}
+
+	\textbf{Your tasks on this slide}
+\begin{itemize}
+  \item Build matrix $A$ from (I,J,values): reserve capacity and call \texttt{buildMatrixUnique}.
+  \item Initialize vector $x = [1,2,3]^\top$ using \texttt{setElement} (clear first with \texttt{set}).
+  \item Compute $y = A\cdot x$ via \texttt{mxv} using the \texttt{plusTimes} semiring.
+  \item Compute $z = x \odot y$ with \texttt{eWiseMul} under the same semiring.
+  \item Compute \texttt{dot\_val} = $x^{\top} x$ with \texttt{dot} (\texttt{plusTimes}). Print all results.
+\end{itemize}
+
+\vspace{0.5em}
+\footnotesize Code on next slide →
+\end{frame}
+
+\begin{frame}[fragile]{Exercise 8: Starter code (C++) — continued}
+\framesubtitle{Complete the TODOs}
+
+\begin{lstlisting}[ language=C++, basicstyle=\ttfamily\scriptsize, caption={Exercise 8 starter: complete the TODOs}, label=lst:exercise8-starter, showstringspaces=false, aboveskip=2pt, belowskip=2pt]
+#include <cstdio>
+#include <iostream>
+#include <vector>
+#include <utility>   // for std::pair
+#include <array>
+
+#include <graphblas.hpp>
+
+using namespace grb;
+
+// Indices and values for our sparse 3x3 matrix A:
+//
+//      A = [ 1   0   2 ]
+//          [ 0   3   4 ]
+//          [ 5   6   0 ]
+//
+// We store the nonzero entries via buildMatrixUnique.
+static const size_t Iidx[6]    = { 0, 0, 1, 1, 2, 2 };  // row indices
+static const size_t Jidx[6]    = { 0, 2, 1, 2, 0, 1 };  // column indices
+static const double Avalues[6] = { 1.0, 2.0, 3.0, 4.0, 5.0, 6.0 };
+
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Exercise 8: Starter code (C++) — continued}
+\begin{lstlisting}[language=C++, basicstyle=\ttfamily\scriptsize, showstringspaces=false, aboveskip=2pt, belowskip=2pt]
+int main( int argc, char **argv ) {
+    (void)argc;
+    (void)argv;
+    std::printf("example (ALP/GraphBLAS) corrected API usage\n\n");
+
+    // 1) Create a 3x3 sparse matrix A
+    std::printf("Step 1: Constructing a 3x3 sparse matrix A.\n");
+    Matrix<double> A(3, 3);
+    // TODO 1: Reserve memory for 6 non-zero entries and build A from (Iidx,Jidx,Avalues), 
+    //         use resize and buildMatrixUnique
+
+    // 2) Create a 3-element vector x and initialize x = [1, 2, 3]^T
+    // TODO 2: Initialize x = [1, 2, 3]^T
+    //         first clear with set, then setElement for indices 0..2
+
+    // 3) Create two result vectors y and z (dimension 3) and set to zero
+    // TODO 3: Create y and z with proper type
+
+    // 4) Use the built-in “plusTimes” semiring alias
+    //      (add = plus, multiply = times, id‐add = 0.0, id-mul = 1.0)
+    auto plusTimes = grb::semirings::plusTimes<double>();
+
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Exercise 8: Starter code (C++) — continued}
+\begin{lstlisting}[language=C++, basicstyle=\ttfamily\scriptsize, showstringspaces=false, aboveskip=2pt, belowskip=2pt]
+
+    // 5) Compute y = A·x  (matrix‐vector multiply under plus‐times semiring)
+    // TODO 3: y = A·x  (matrix-vector multiply under plusTimes) using mxv()
+
+    // 6) Compute z = x ⊙ y  (element‐wise multiply) via eWiseMul with semiring
+    // TODO 4: z = x ⊙ y  (element-wise multiply) using eWiseMul()
+    
+    // 7) Compute dot_val = xᵀ·x  (dot‐product under plus‐times semiring)
+    // TODO 5: dot_val = x^T x (dot-product under plusTimes) using dot() 
+
+    // 8) Print x, y, z, and dot_val
+
+    return EXIT_SUCCESS;
+}
+\end{lstlisting}
+
+\end{frame}
+
+
+
 
 \subsection{6) Closure, transition paths, python mxv examples}
 \begin{frame}{Transition paths and Python mxv}
