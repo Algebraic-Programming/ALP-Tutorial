@@ -81,8 +81,8 @@
 \lstnewenvironment{cppcode}[1][]{\lstset{style=cpp-rich,#1}}{}
 
 \title{Algebraic Programming (ALP) Tutorial}
-\subtitle{From HPC to GraphBLAS and Transition Paths}
-\author{ALP Team}
+%\subtitle{From HPC to GraphBLAS and Transition Paths}
+\author{ALP HIPO Team}
 \date{\today}
 
 % Show roadmap before each section/subsection with upcoming content highlighted
@@ -101,24 +101,29 @@
 \frame{\titlepage}
 
 % =========================
-% Monday 10 Nov
+% Monday 10 Nov, Morning
 % =========================
-\section{Monday 10 Nov}
+\section{Monday 10 Nov, Morning}
 
 % One initial agenda slide for Monday; will be auto-repeated via Roadmap frames
-\begin{frame}{Today's Plan (Monday)}
+\begin{frame}{Today's Plan}
+Morning:
 \begin{enumerate}
-  \item Introduction to GraphBLAS and ALP
-  \item Installation on Linux, demos
-  \item Hands-on: containers, I/O, copying, masking, standard matrices
-  \item Introduction to primitives
-  \item Exercise 8
-  \item Closure: transition paths, Python mxv examples
-  \item Ising Machine, new solvers
+  \item Introduction to ALP, installation, and short demos
+  \item Hands-on (I): installation, containers, I/O, copying, masking, and standard matrices
+  \item Introduction to core primitives
+  \item Hands-on (II): numerical linear algebra
+  \item Interoperability with existing code: transition paths \& Python
+\end{enumerate}\vspace{\baselineskip}
+
+Afternoon:
+\begin{enumerate}\setcounter{enumi}{6}
+	\item Ising Machine, and
+	\item other solvers
 \end{enumerate}
 \end{frame}
 
-\subsection{1) Introduction to GraphBLAS and ALP}
+\subsection{1) Introduction to ALP, installation, and short demos}
 % Owner: DJ
 
 % Intro (concise outline)
@@ -271,8 +276,7 @@
 % (Duplicate intro frames removed below to avoid repetition)
 
 
-\subsection{2) Installation on Linux, demos}
-\begin{frame}[fragile]{2.ALP Installation}
+\begin{frame}[fragile]{1. ALP Installation}
 \framesubtitle{Prerequisites (skip if already installed)}
 \begin{itemize}
     \item Requirements:
@@ -297,7 +301,7 @@ git clone https://github.com/Algebraic-Programming/ALP-Tutorial.git
 % Source (ALP_Tutorial.tex - Installation on Linux, step 1)
 \end{frame}
 
-\begin{frame}[fragile]{2. ALP Installation}
+\begin{frame}[fragile]{1. ALP Installation}
 \framesubtitle{Obtain and Build ALP}
 \begin{enumerate}
     \item Clone \textbf{ALP} from the official GitHub repository:
@@ -320,7 +324,7 @@ source ../install/bin/setenv
 % Source (ALP_Tutorial.tex - Installation on Linux, steps 2-3)
 \end{frame}
 
-\begin{frame}[fragile]{2. ALP Installation}
+\begin{frame}[fragile]{1. ALP Installation}
 \framesubtitle{Setup Environment and Test}
 \begin{enumerate}
     \item Return to the \textbf{ALP-Tutorial} directory:
@@ -340,7 +344,7 @@ grbrun ./sp_example
 % Source (ALP_Tutorial.tex - Installation on Linux, steps 4-6)
 \end{frame}
 
-\begin{frame}[fragile]{3. Hands-on: Setting up scripts}
+\begin{frame}[fragile]{2. Hands-on: Setting up scripts}
     \framesubtitle{ALP/GraphBLAS Overview}
     \begin{itemize}
         \item You can find code skeletons for the tutorial in: \texttt{path/to/alp-tutorial/scripts}
@@ -364,7 +368,7 @@ Info: grb::finalize (reference) called.
     \end{itemize}
 \end{frame}
 
-\begin{frame}[fragile]{3. Hands-on: What did we just run?}
+\begin{frame}[fragile]{2. Hands-on: What did we just run?}
     \framesubtitle{Hello World in ALP/GraphBLAS}
     \vspace{-0.6em}
     \begin{lstlisting}[style=cpp-rich, language=C++, basicstyle=\ttfamily\scriptsize]
@@ -395,7 +399,7 @@ int main( int argc, char ** argv ) {
         % Source (ALP_Tutorial.tex - ALP/GraphBLAS, Hello World)
 \end{frame}
 
-\begin{frame}{3. Hands-on: What did we just run?}
+\begin{frame}{2. Hands-on: What did we just run?}
 \framesubtitle{ALP/GraphBLAS Overview}
 \begin{itemize}
     \item Pure C++ (developed similarly to the GraphBLAS C specification)
@@ -433,9 +437,10 @@ int main( int argc, char ** argv ) {
 % Source (ALP_Tutorial.tex - ALP/GraphBLAS, Hello World explanation)
 \end{frame}
 
-\subsection{3) Hands-on: containers, I/O, copying, masking, standard matrices (3.1–3.3)}
-\begin{frame}[fragile]{3.1. Hands-on: Containers}
-\framesubtitle{3.1. ALP/GraphBLAS Containers}
+\subsection{2) Hands-on: installation, containers, I/O, copying, masking, standard matrices (3.1–3.3)}
+
+\begin{frame}[fragile]{2.1. Hands-on: Containers}
+\framesubtitle{2.1. ALP/GraphBLAS Containers}
 \begin{itemize}
     \item \textbf{Primary containers:} \texttt{grb::Vector<T>} and \texttt{grb::Matrix<T>}
     \begin{itemize}
@@ -462,7 +467,7 @@ grb::Matrix<void> A(150000, 100000);
 % Source (ALP_Tutorial.tex - ALP/GraphBLAS Containers)
 \end{frame}
 
-\begin{frame}[fragile]{3.1. Hands-on: Containers}
+\begin{frame}[fragile]{2.1. Hands-on: Containers}
 \framesubtitle{Exercise 2}
 \vspace{-0.5em}
 \textbf{Exercise 2.} Allocate the following vectors and matrices:
@@ -491,7 +496,7 @@ Info: grb::finalize (reference) called.
 % Source (ALP_Tutorial.tex - ALP/GraphBLAS Containers, Exercise 2)
 \end{frame}
 
-\begin{frame}[fragile]{3.2. Hands-on: Basic Container I/O}
+\begin{frame}[fragile]{2.2. Hands-on: Basic Container I/O}
 \framesubtitle{Container primitives and accessing elements}
 ALP/GraphBLAS containers use iterators and custom primitives to manipulate data:
 \\
@@ -506,7 +511,7 @@ ALP/GraphBLAS containers use iterators and custom primitives to manipulate data:
 % Source (ALP_Tutorial.tex - Basic Container I/O)
 \end{frame}
 
-\begin{frame}[fragile]{3.2. Hands-on: Basic Container I/O}
+\begin{frame}[fragile]{2.2. Hands-on: Basic Container I/O}
     \framesubtitle{Exercise 3: Container manipulation}
     \textbf{Exercise 3.} Allocate:
     \begin{itemize}
@@ -530,7 +535,7 @@ nonzeroes in y: 1
 % Source (ALP_Tutorial.tex - Basic Container I/O, Exercise 3)
 \end{frame}
 
-\begin{frame}[fragile]{3.2. Hands-on: Basic Container I/O}
+\begin{frame}[fragile]{2.2. Hands-on: Basic Container I/O}
     \framesubtitle{Exercise 4: Itterators}
 ALP/GraphBLAS exposes \textbf{C++ STL-compatible iterators:}
 \begin{lstlisting}[style=cpp-rich, language=C++, basicstyle=\ttfamily\scriptsize]
@@ -552,7 +557,7 @@ cp alp_containers_ex3.cpp alp_containers_ex4.cpp
     % Source (ALP_Tutorial.tex - Basic Container I/O, Exercise 4)
 \end{frame}
 
-\begin{frame}[fragile]{3.2. Hands-on: Basic Container I/O}
+\begin{frame}[fragile]{2.2. Hands-on: Basic Container I/O}
     \framesubtitle{Container file I/O}
     ALP supports reading sparse matrices from common file formats(e.g. MatrixMarket \texttt{.mtx})
     \begin{itemize}
@@ -580,7 +585,7 @@ grb::RC rc = grb::buildMatrixUnique( A, parser.begin(grb::SEQUENTIAL),
     % Source (ALP_Tutorial.tex - Basic Container I/O)
 \end{frame}
 
-\begin{frame}[fragile]{3.2. Hands-on: Basic Container I/O}
+\begin{frame}[fragile]{2.2. Hands-on: Basic Container I/O}
 \framesubtitle{Exercise 5: File I/O}
 \textbf{Exercise 5.} Use the \texttt{MatrixFileReader} and its iterators to build \texttt{A} from \texttt{west0497.mtx}:
 \begin{itemize}
@@ -699,7 +704,7 @@ const grb::Matrix< double > identity =
 % Source (ALP_Tutorial.tex - Copying, Masking, and Standard Matrices)
 \end{frame}
 
-\subsection{4) Introduction to primitives (3.4)}
+\subsection{3) Introduction to core primitives (3.4)}
 \begin{frame}{Primitives overview (3.4)}
 \begin{itemize}
     \item Level-1: foldl/foldr, dot, eWiseAdd/Mul
@@ -716,7 +721,8 @@ const grb::Matrix< double > identity =
 % \end{lstlisting}
 \end{frame}
 
-\subsection{5) Exercise 8}
+\subsection{4) numerical linear algebra}
+
 \begin{frame}[fragile]{Exercise 8}
 \begin{itemize}
   \item Build small $A$ and $x$
@@ -850,10 +856,8 @@ int main( int argc, char **argv ) {
 
 \end{frame}
 
+\subsection{5) Interoperability with existing code: transition paths \& Python}
 
-
-
-\subsection{6) Closure, transition paths, python mxv examples}
 \begin{frame}{Transition paths and Python mxv}
 \begin{itemize}
     \item ALP transition paths overview
@@ -865,10 +869,26 @@ int main( int argc, char **argv ) {
 % ALP ... transition path APIs ... drop-in replacements ... re-link your program against ALP's libraries ...
 \end{frame}
 
-\subsection{7) Ising Machine, new solvers}
-\begin{frame}{Ising Machine, new solvers}
+% =========================
+% Monday 10 Nov, Afternoon
+% =========================
+
+\section{Monday 10 Nov, Afternoon}
+
+\subsection{7) Ising Machine}
+
+\begin{frame}{Ising Machine}
 \begin{itemize}
     \item Placeholder for Ising Machine content
+    \item New solver directions
+\end{itemize}
+% Owner: DJ
+\end{frame}
+
+\subsection{8) other solvers}
+
+\begin{frame}{new solvers}
+\begin{itemize}
     \item New solver directions
 \end{itemize}
 % Owner: DJ
