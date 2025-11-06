@@ -39,6 +39,10 @@
     frame=single, rulecolor=\color{white}, breaklines=true,
     captionpos=b, showstringspaces=false,
     upquote=true, columns=fullflexible,
+    commentstyle=\color{terminaltext},
+    keywordstyle=\color{terminaltext},
+    stringstyle=\color{terminaltext},
+    identifierstyle=\color{terminaltext},
     literate={·}{{$\cdot$}}1 {⊙}{{$\odot$}}1 {ᵀ}{{$^\top$}}1 {×}{{$\times$}}1 {‐}{{-}}1 {–}{{-}}1 {—}{{-}}1
 }
 \lstdefinestyle{code}{
@@ -363,7 +367,7 @@ Info: grb::finalize (reference) called.
 \begin{frame}[fragile]{3. Hands-on: What did we just run?}
     \framesubtitle{Hello World in ALP/GraphBLAS}
     \vspace{-0.6em}
-    \begin{lstlisting}[style=code, language=C++, basicstyle=\ttfamily\scriptsize]
+    \begin{lstlisting}[style=cpp-rich, language=C++, basicstyle=\ttfamily\scriptsize]
 #include <cstddef>
 #include <cstring>
 #include <graphblas.hpp>
@@ -392,7 +396,7 @@ int main( int argc, char ** argv ) {
 \end{frame}
 
 \begin{frame}{3. Hands-on: What did we just run?}
-\framesubtitle{ALP/GraphBLAS Overview \PA{Some of this info might/should be at the intro. Adjust accordingly.}}
+\framesubtitle{ALP/GraphBLAS Overview}
 \begin{itemize}
     \item Pure C++ (developed similarly to the GraphBLAS C specification)
     \item Exposes a GraphBLAS interface with 3 categories (part of the \texttt{grb} namespace):
@@ -439,7 +443,7 @@ int main( int argc, char ** argv ) {
         \item Support for sparse: Store nonzeros efficiently internally (with CSR/CSC formats)
     \end{itemize}
     \item \textbf{Examples:}
-\begin{lstlisting}[style=code, language=C++, basicstyle=\ttfamily\scriptsize]
+\begin{lstlisting}[style=cpp-rich, language=C++, basicstyle=\ttfamily\scriptsize]
 grb::Vector<double> x(100000), y(150000);
 grb::Matrix<void> A(150000, 100000);
 \end{lstlisting}
@@ -517,10 +521,10 @@ ALP/GraphBLAS containers use iterators and custom primitives to manipulate data:
 cp alp_containers_ex2.cpp alp_containers_ex3.cpp 
 \end{lstlisting}
     \textbf{Expected output:}
-    \begin{lstlisting}[style=terminal, language=bash, basicstyle=\ttfamily\scriptsize\color{terminaltext}]
-    nonzeroes in x: 497
-    nonzeroes in y: 1
-    \end{lstlisting}
+\begin{lstlisting}[style=terminal, language=bash, basicstyle=\ttfamily\scriptsize\color{terminaltext}]
+nonzeroes in x: 497
+nonzeroes in y: 1
+\end{lstlisting}
     \textbf{Bonus question:} Print the capacity of \texttt{y}. Should the value returned be unexpected, considering the specification in the user documentation, is this a bug in ALP?
 % Owner: PA
 % Source (ALP_Tutorial.tex - Basic Container I/O, Exercise 3)
@@ -529,7 +533,7 @@ cp alp_containers_ex2.cpp alp_containers_ex3.cpp
 \begin{frame}[fragile]{3.2. Hands-on: Basic Container I/O}
     \framesubtitle{Exercise 4: Itterators}
 ALP/GraphBLAS exposes \textbf{C++ STL-compatible iterators:}
-\begin{lstlisting}[style=code, language=C++, basicstyle=\ttfamily\scriptsize]
+\begin{lstlisting}[style=cpp-rich, language=C++, basicstyle=\ttfamily\scriptsize]
 for( const auto &pair : y ) {
 std::cout << "y[" << pair.first << "]=" << pair.second << "\n";
 }
@@ -553,7 +557,7 @@ cp alp_containers_ex3.cpp alp_containers_ex4.cpp
     ALP supports reading sparse matrices from common file formats(e.g. MatrixMarket \texttt{.mtx})
     \begin{itemize}
         \item \textbf{MatrixMarket file parser:}
-\begin{lstlisting}[style=code, language=C++, basicstyle=\ttfamily\scriptsize]
+\begin{lstlisting}[style=cpp-rich, language=C++, basicstyle=\ttfamily\scriptsize]
 #include <graphblas/utils/parser.hpp>
 std::string in( "matrix_file.mtx" );
 grb::utils::MatrixFileReader< double > parser( in, true );
@@ -565,7 +569,7 @@ std::cout << "First parsed entry: ( " << iterator.i() << ", " << iterator.j() <<
             \item \textbf{Sparse iterators}: \texttt{iterator.i()}, \texttt{iterator.j()}, \texttt{iterator.v()}
         \end{itemize}
         \item \textbf{Building/loading matrices from files:}
-\begin{lstlisting}[style=code, language=C++, basicstyle=\ttfamily\scriptsize]
+\begin{lstlisting}[style=cpp-rich, language=C++, basicstyle=\ttfamily\scriptsize]
 grb::RC rc = grb::buildMatrixUnique( A, parser.begin(grb::SEQUENTIAL), 
     parser.end(grb::SEQUENTIAL),grb::SEQUENTIAL);
 \end{lstlisting}
@@ -603,16 +607,16 @@ nonzeroes in A: 1727
 \begin{frame}[fragile]{3.3. Hands-on: Copying, Masking, and Standard Matrices}
 \framesubtitle{Copying with Resize/Execute Phases}
 \texttt{grb::set} supports copying containers with automatic capacity management:
-\begin{lstlisting}[style=code, language=C++, basicstyle=\ttfamily\scriptsize]
+\begin{lstlisting}[style=cpp-rich, language=C++, basicstyle=\ttfamily\scriptsize]
 grb::RC rc = grb::set( x, y ); // Works normally 
 \end{lstlisting}
 But... if capacity $B$(497) $<$ $A$ nnz (1727), \texttt{grb::set(B, A)} returns \textbf{grb::ILLEGAL}
-\begin{lstlisting}[style=code, language=C++, basicstyle=\ttfamily\scriptsize]
+\begin{lstlisting}[style=cpp-rich, language=C++, basicstyle=\ttfamily\scriptsize]
 grb::Matrix< double > B( 497, 497 );
 rc = rc ? rc : grb::set( B, A );  // grb::ILLEGAL, B capacity violation
 \end{lstlisting}
 \textbf{Solution:} use \texttt{RESIZE} phase first, then \texttt{EXECUTE}
-\begin{lstlisting}[style=code, language=C++, basicstyle=\ttfamily\scriptsize]
+\begin{lstlisting}[style=cpp-rich, language=C++, basicstyle=\ttfamily\scriptsize]
 rc = rc ? rc : grb::set( B, A, grb::RESIZE );
 rc = rc ? rc : grb::set( B, A, grb::EXECUTE );
 \end{lstlisting}
@@ -634,7 +638,7 @@ rc = rc ? rc : grb::set( B, A, grb::EXECUTE );
     \item The mask determines which positions get output entries
     \item All GraphBLAS primitives with output containers can take mask arguments
 \end{itemize}
-\begin{lstlisting}[style=code, language=C++, basicstyle=\ttfamily\scriptsize]
+\begin{lstlisting}[style=cpp-rich, language=C++, basicstyle=\ttfamily\scriptsize]
 grb::RC rc = grb::set( x, y, false ); // Second argument is a mask
 \end{lstlisting}
 \textbf{Example}: If $y$ has only $y[200]=\texttt{true}$, then \texttt{grb::set(x, y, false)} results in $x$ having only one entry: $x[200]=\texttt{false}$. Why?
@@ -654,7 +658,7 @@ grb::RC rc = grb::set( x, y, false ); // Second argument is a mask
 \begin{frame}[fragile]{3.3. Hands-on: Copying, Masking, and Standard Matrices}
 \framesubtitle{Standard Matrix Factories}
 Iterator-based ingestion allows construction of vectors and matrices with regular structures. ALP/GraphBLAS provides standard matrix factories:
-\begin{lstlisting}[style=code, language=C++, basicstyle=\ttfamily\scriptsize]
+\begin{lstlisting}[style=cpp-rich, language=C++, basicstyle=\ttfamily\scriptsize]
 #include <graphblas/algorithms/matrix_factory.hpp>
 const grb::Matrix< double > identity = 
     grb::algorithms::matrices< double >::identity( n );
@@ -977,7 +981,7 @@ int main( int argc, char **argv ) {
 % TODO: think about reordering the frames
 \begin{frame}[fragile]{SPMD Hello World with ALP/GraphBLAS}
 	Let's look at \texttt{spmd.cpp}:
-\begin{lstlisting}[style=code, language=C++, basicstyle=\ttfamily\scriptsize]
+\begin{lstlisting}[style=cpp-rich, language=C++, basicstyle=\ttfamily\scriptsize]
 #include<iostream>
 #include<graphblas.hpp>
 
@@ -1028,12 +1032,12 @@ Finishing: data_out is 69
 \begin{frame}[fragile]{What GraphBLAS offers: SPMD APIs}
 	\begin{itemize}
 		\item SPMD namespace utilities:
-\begin{lstlisting}[style=code, language=C++, basicstyle=\ttfamily\scriptsize]
+\begin{lstlisting}[style=cpp-rich, language=C++, basicstyle=\ttfamily\scriptsize]
 size_t s = spmd<>::pid(); 		// get my process number
 size_t np = spmd<>::nprocs();	// get the total number of processes
 \end{lstlisting}
 		\item Collective functions:
-\begin{lstlisting}[style=code, language=C++, basicstyle=\ttfamily\scriptsize]
+\begin{lstlisting}[style=cpp-rich, language=C++, basicstyle=\ttfamily\scriptsize]
 // sum over all the values of num in the different processes. The result is available only in process 1
 grb::collectives<>::reduce( num, 1, grb::operators::add );
 // same as above but the result is available to every process
