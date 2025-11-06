@@ -34,7 +34,7 @@
 \definecolor{terminalback}{rgb}{0.1,0.1,0.1}
 \definecolor{terminaltext}{rgb}{0.9,0.9,0.9}
 \lstdefinestyle{terminal}{
-    backgroundcolor=\color{terminalback},
+    backgroundcolor=\color{gray!20},
     basicstyle=\ttfamily\small\color{terminaltext},
     frame=single, rulecolor=\color{white}, breaklines=true,
     captionpos=b, showstringspaces=false,
@@ -873,18 +873,56 @@ int main( int argc, char **argv ) {
 \subsection{7) Ising Machine}
 
 \begin{frame}{Ising Machine}
+\subsection{7) Ising Machine, new solvers}
+\begin{frame}[fragile]{ALP algorithms: overview}
 \begin{itemize}
-    \item Placeholder for Ising Machine content
-    \item New solver directions
+  \item Project repo: \url{https://github.com/Algebraic-Programming/ALP}
+  \item Algorithms live under: \verb|include/graphblas/algorithms/|
+  \item We ship several common algorithms/solvers that can be used as black boxes
+  \item Usage modes:
+    \begin{itemize}
+      \item From C++: include the header and call via your program (optionally through a runner/launcher)
+      \item As precompiled libraries: link and call without touching internals
+    \end{itemize}
 \end{itemize}
 % Owner: DJ
 \end{frame}
 
-\subsection{8) other solvers}
-
-\begin{frame}{new solvers}
+\begin{frame}[fragile]{Algorithms in the repository (selected)}
+\framesubtitle{Headers under \texttt{include/graphblas/algorithms/}}
+\begin{lstlisting}[style=terminal,language=bash]
+bicgstab.hpp             kmeans.hpp          pregel_connected_components.hpp
+conjugate_gradient.hpp   knn.hpp             pregel_pagerank.hpp
+cosine_similarity.hpp    label.hpp           simple_pagerank.hpp
+gmres.hpp                matrix_factory.hpp  sparse_nn_single_inference.hpp
+hpcg/                    mpv.hpp             spy.hpp
+kcore_decomposition.hpp  norm.hpp
+\end{lstlisting}
+\vspace{-0.5em}
 \begin{itemize}
-    \item New solver directions
+  \item Coverage spans linear solvers (CG/GMRES/BiCGSTAB), graph analytics (PageRank, CC, k-core), ML (kNN, k-means), utilities (matrix factory, spy), etc.
+  \item Treat them as black boxes or customize via template parameters and descriptors.
+\end{itemize}
+% Owner: DJ
+\end{frame}
+
+\begin{frame}{New solvers: QUBO / Ising}
+\begin{itemize}
+  \item Added QUBO optimization solvers (work-in-progress):
+    \begin{itemize}
+      \item Ising Machine — Simulated Bifurcation
+      \item Replica Exchange (Ising / QUBO)
+    \end{itemize}
+  \item Status: currently available on separate branches
+  \item How you can help: inspect branches, add comments, propose improvements (PRs/issues welcome)
+\end{itemize}
+% Owner: DJ
+\end{frame}
+
+\begin{frame}{Roadmap for solvers}
+\begin{itemize}
+  \item This year: complete Ising solvers (Simulated Bifurcation, Replica Exchange)
+  \item Next year: support interior-point optimization methods
 \end{itemize}
 % Owner: DJ
 \end{frame}
