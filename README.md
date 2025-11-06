@@ -2,7 +2,7 @@
 
 # ALP-Tutorial
 
-The [pdf](https://algebraic-programming.github.io/ALP-Tutorial/main.pdf) vresion is available online.
+The [pdf](https://algebraic-programming.github.io/ALP-Tutorial/main.pdf) version is available online.
 
 ## License
 
