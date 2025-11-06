@@ -600,29 +600,99 @@ nonzeroes in A: 1727
 % Source (ALP_Tutorial.tex - Basic Container I/O, Exercise 5)
 \end{frame}
 
-\begin{frame}[fragile]{Hands-on: Copying, Masking, and Standard Matrices (3.3)}
+\begin{frame}[fragile]{3.3. Hands-on: Copying, Masking, and Standard Matrices}
+\framesubtitle{Copying with Resize/Execute Phases}
+\texttt{grb::set} supports copying containers with automatic capacity management:
+\begin{lstlisting}[style=code, language=C++, basicstyle=\ttfamily\scriptsize]
+grb::RC rc = grb::set( x, y ); // Works normally 
+\end{lstlisting}
+But... if capacity $B$(497) $<$ $A$ nnz (1727), \texttt{grb::set(B, A)} returns \textbf{grb::ILLEGAL}
+\begin{lstlisting}[style=code, language=C++, basicstyle=\ttfamily\scriptsize]
+grb::Matrix< double > B( 497, 497 );
+rc = rc ? rc : grb::set( B, A );  // grb::ILLEGAL, B capacity violation
+\end{lstlisting}
+\textbf{Solution:} use \texttt{RESIZE} phase first, then \texttt{EXECUTE}
+\begin{lstlisting}[style=code, language=C++, basicstyle=\ttfamily\scriptsize]
+rc = rc ? rc : grb::set( B, A, grb::RESIZE );
+rc = rc ? rc : grb::set( B, A, grb::EXECUTE );
+\end{lstlisting}
 \begin{itemize}
-    \item Copy with resize/execute phases
-    \item Masks controlling writes
-    \item Factory: identity, eye, diag
+    \item \textbf{Resize phase}: ALP figures out required capacity and resizes if necessary
+    \item \textbf{Execute phase}: Performs the copy (default if omitted)
+\end{itemize}
+\textbf{Question.} What does the code pattern \texttt{rc = rc ? rc : <function call>;} achieve?
+
+\textbf{Question.} $A$ contains $1727$ double-precision elements. Are these $1727$ nonzeroes?
+% Owner: PA
+% Source (ALP_Tutorial.tex - Copying, Masking, and Standard Matrices)
+\end{frame}
+
+\begin{frame}[fragile]{3.3. Hands-on: Copying, Masking, and Standard Matrices}
+\framesubtitle{Masking}
+\texttt{grb::set} can also accept a \textit{mask} argument that determines which outputs are computed:
+\begin{itemize}
+    \item The mask determines which positions get output entries
+    \item All GraphBLAS primitives with output containers can take mask arguments
+\end{itemize}
+\begin{lstlisting}[style=code, language=C++, basicstyle=\ttfamily\scriptsize]
+grb::RC rc = grb::set( x, y, false ); // Second argument is a mask
+\end{lstlisting}
+\textbf{Example}: If $y$ has only $y[200]=\texttt{true}$, then \texttt{grb::set(x, y, false)} results in $x$ having only one entry: $x[200]=\texttt{false}$. Why?
+\begin{itemize}
+    \item Mask evaluates \texttt{false} for positions where $y$ has no element (no output generated)
+    \item At position $200$, mask $y$ contains \texttt{true}, so output entry is generated
+\end{itemize}
+\textbf{Question.} What would \texttt{grb::set( y, x, true )} return for $y$, assuming it is computed immediately after the preceding code snippet?
+% \begin{itemize}
+%     \item The mask evaluates \texttt{true} for positions where $x$ has an element
+%     \item The output is the same as the input, since the mask is \texttt{true} for all positions
+% \end{itemize}
+% Owner: PA
+% Source (ALP_Tutorial.tex - Copying, Masking, and Standard Matrices)
+\end{frame}
+
+\begin{frame}[fragile]{3.3. Hands-on: Copying, Masking, and Standard Matrices}
+\framesubtitle{Standard Matrix Factories}
+Iterator-based ingestion allows construction of vectors and matrices with regular structures. ALP/GraphBLAS provides standard matrix factories:
+\begin{lstlisting}[style=code, language=C++, basicstyle=\ttfamily\scriptsize]
+#include <graphblas/algorithms/matrix_factory.hpp>
+const grb::Matrix< double > identity = 
+    grb::algorithms::matrices< double >::identity( n );
+\end{lstlisting}
+\begin{itemize}
+    \item \textbf{Factory patterns}: \texttt{identity}, \texttt{eye}, \texttt{diag} 
+    \begin{itemize}
+        \item with optional offset $k$ for superdiagonal/subdiagonal
+    \end{itemize}
+    \item \textbf{Dense patterns}: \texttt{dense}, \texttt{full}, \texttt{zeros}, \texttt{ones}
+    \begin{itemize}
+        \item \textbf{Discouraged} - ALP/GraphBLAS not optimized for dense matrices
+    \end{itemize}
+\item Finally, matrices can be derived from existing ones via \texttt{grb::set(matrix,mask,value)}
+\item \href{http://albert-jan.yzelman.net/alp/v0.8-preview/classgrb_1_1algorithms_1_1matrices.html#a1336accbaf6a61ebd890bef9da4116fc}
+{\textcolor{blue}{See documentation}} for all supported patterns.
 \end{itemize}
 % Owner: PA
-% Source (ALP_Tutorial.tex - Copying, Masking, and Standard Matrices):
-% \begin{lstlisting}
-% grb::Matrix<double> B(497, 497);
-% grb::RC rc = grb::set( x, y );
-% rc = rc ? rc : grb::set( B, A, grb::RESIZE );
-% rc = rc ? rc : grb::set( B, A, grb::EXECUTE );
-% \end{lstlisting}
-% Mask example:
-% \begin{lstlisting}
-% grb::RC rc = grb::set( x, y, false );
-% \end{lstlisting}
-% Factory:
-% \begin{lstlisting}
-% #include <graphblas/algorithms/matrix_factory.hpp>
-% const auto I = grb::algorithms::matrices<double>::identity(n);
-% \end{lstlisting}
+% Source (ALP_Tutorial.tex - Copying, Masking, and Standard Matrices)
+\end{frame}
+
+\begin{frame}[fragile]{3.3. Hands-on: Copying, Masking, and Standard Matrices}
+\framesubtitle{Exercises 6 and 7: Masking and matrix manipulation}
+\textbf{Exercise 6.} Determine whether $A$ holds explicit zeroes (entries with numerical value zero):
+\begin{itemize}
+    \item Start from \texttt{alp\_containers\_ex5.cpp}
+    \item Use masking and copying to detect explicit zeroes on A. 
+    \item \textbf{Hint:} Consider changing $A$ element type to \texttt{double}.
+\end{itemize}
+\textbf{Exercise 7.} Count explicit zeroes on diagonal, superdiagonal, and subdiagonal of $A$:
+\begin{itemize}
+    \item Use the condition(s): $|\{A_{ij}\in A\ |\ A_{ij}=0, |i-j|\leq1, 0\leq i,j<497\}|$
+    \item \textbf{Note:} \textit{Explicit zeroes} = entries \textit{present in the matrix} but with \textit{numerical value} zero.
+    \item \textbf{Hint:} Matrix factory patterns could be helpful here...
+\end{itemize}
+\textbf{Bonus question.} How much memory beyond storing the $n\times n$ identity matrix will \texttt{matrices<double>::identity(n)} consume? \textbf{Hint:} consider that iterators passed to \texttt{buildMatrixUnique} iterate over regular index sequences.
+% Owner: PA
+% Source (ALP_Tutorial.tex - Copying, Masking, and Standard Matrices)
 \end{frame}
 
 \subsection{4) Introduction to primitives (3.4)}
