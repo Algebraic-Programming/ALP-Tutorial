@@ -878,11 +878,107 @@ int main( int argc, char **argv ) {
 \end{frame}
 
 \subsection{14) SPMD execution, Replica exchange}
-\begin{frame}{SPMD execution, Replica exchange}
-\begin{itemize}
-    \item Concepts and API sketch
-    \item Example workflow
-\end{itemize}
+
+% \begin{frame}{SPMD execution, Replica exchange}
+% \begin{itemize}
+    % \item Concepts and API sketch
+    % \item Example workflow
+% \end{itemize}
+% % Owner: GG
+% \end{frame}
+
+\begin{frame}{The SPMD paradigm}
+	\begin{itemize}
+		\item What is SPMD?
+		\begin{itemize}
+			\item SPMD means \textit{Single Program Multiple Data} % ;
+			\item \textbf{Multiprocessing}: Multiple processes run independently and communicate
+			\item \textbf{MPI} is an example of SPMD in the real world.
+				% You may know MPI.
+		\end{itemize}
+		\item Why SPMD and not OpenMP? \\
+			Asynchronous execution, distributed memory systems, clusters.
+	\end{itemize}
+	\vspace{0.5cm}
+	\textbf{Note:} ALP/GraphBLAS has currently a single SPMD backend: \textbf{BSP1D}.
+% Owner: GG
+\end{frame}
+
+% TODO: think about reordering the frames
+\begin{frame}[fragile]{SPMD Hello World with ALP/GraphBLAS}
+	Let's look at \texttt{spmd.cpp}:
+\begin{lstlisting}[style=code, language=C++, basicstyle=\ttfamily\scriptsize]
+#include<iostream>
+#include<graphblas.hpp>
+
+void grb_program( const size_t &data_in , size_t &data_out ){
+	const size_t s = grb::spmd<>::pid();
+	std :: cerr << "Hello from process " << s << std :: endl; // printed by each process
+	data_out = 69;
+}
+
+int main ( int argc , char ** argv ) {
+	size_t data_in = 42 , data_out;
+
+	std::cerr << "Starting... " << std::endl ; // printed only once
+	grb::Launcher< grb::AUTOMATIC > launcher;
+	launcher.exec( &grb_program, data_in, data_out, true );
+	std::cerr << "Finishing: data_out is " << data_out << std::endl ; // printed once
+}
+\end{lstlisting}
+
+% Owner: GG
+\end{frame}
+
+\begin{frame}[fragile]{SPMD Hello World with ALP/GraphBLAS}
+
+We compile and run it as follows:
+\begin{lstlisting}[style=terminal, language=bash]
+$ grbcxx -b bsp1d spmd.cpp -o spmd_example
+$ grbrun -b bsp1d -n 2  ./spmd_example
+\end{lstlisting}
+So the output will be something like this:
+	\begin{lstlisting}[basicstyle=\ttfamily\scriptsize]
+Starting... 
+Info: grb::init (BSP1D) called using 4 user processes.
+Info: grb::init (reference) called.
+Info: grb::init (reference) called.
+Hello from process 0
+Info: grb::finalize (bsp1d) called.
+	 process 0 is finalisingHello from process 1
+
+	 process 1 is finalising
+Info: grb::finalize (reference) called.
+Info: grb::finalize (reference) called.
+Finishing: data_out is 69
+\end{lstlisting}
+% Owner: GG
+\end{frame}
+
+\begin{frame}[fragile]{What GraphBLAS offers: SPMD APIs}
+	\begin{itemize}
+		\item SPMD namespace utilities:
+\begin{lstlisting}[style=code, language=C++, basicstyle=\ttfamily\scriptsize]
+size_t s = spmd<>::pid(); 		// get my process number
+size_t np = spmd<>::nprocs();	// get the total number of processes
+\end{lstlisting}
+		\item Collective functions:
+\begin{lstlisting}[style=code, language=C++, basicstyle=\ttfamily\scriptsize]
+// sum over all the values of num in the different processes. The result is available only in process 1
+grb::collectives<>::reduce( num, 1, grb::operators::add );
+// same as above but the result is available to every process
+grb::collectives<>::allreduce( num, grb::operators::add );
+// set x to the value it has in process 7
+grb::collectives<>::broadcast( x, 7 );
+\end{lstlisting}
+And more to come...
+	\end{itemize}
+% Owner: GG
+\end{frame}
+
+
+\begin{frame}{Simulated Annealing-Replica Exchange}
+
 % Owner: GG
 \end{frame}
 
