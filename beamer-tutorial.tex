@@ -790,17 +790,12 @@ dot(x,x) = 14
 #include <vector>
 #include <utility>   // for std::pair
 #include <array>
-
 #include <graphblas.hpp>
-
 using namespace grb;
-
 // Indices and values for our sparse 3x3 matrix A:
-//
 //      A = [ 1   0   2 ]
 //          [ 0   3   4 ]
 //          [ 5   6   0 ]
-//
 // We store the nonzero entries via buildMatrixUnique.
 static const size_t Iidx[6]    = { 0, 0, 1, 1, 2, 2 };  // row indices
 static const size_t Jidx[6]    = { 0, 2, 1, 2, 0, 1 };  // column indices
