@@ -40,7 +40,7 @@
 }
 \lstdefinestyle{code}{
     backgroundcolor=\color[rgb]{0.95,0.95,0.95},
-    basicstyle=\ttfamily\small, frame=single, breaklines=true,
+    basicstyle=\ttfamily\small, frame=single, breaklines=true, showstringspaces=false,
     rulecolor=\color{black}, numbers=none, keepspaces=true, captionpos=b, tabsize=2,
     language=C++,
     literate={·}{{$\cdot$}}1 {⊙}{{$\odot$}}1 {ᵀ}{{$^\top$}}1 {×}{{$\times$}}1 {‐}{{-}}1 {“}{{"`}}1 {”}{{'"}}1
@@ -222,6 +222,10 @@ sudo apt-get install build-essential libnuma-dev libpthread-stubs0-dev cmake
 dnf group install "Development Tools"
 dnf install numactl-devel cmake
 \end{lstlisting}
+    \item Clone \textbf{ALP-Tutorial} from the official GitHub repository:
+\begin{lstlisting}[style=terminal, language=bash]
+git clone https://github.com/Algebraic-Programming/ALP-Tutorial.git
+\end{lstlisting}
 \end{itemize}
 % Owner: PA
 % Source (ALP_Tutorial.tex - Installation on Linux, step 1)
@@ -241,6 +245,10 @@ cd ALP && mkdir build && cd build
 make -j
 make install
 \end{lstlisting}
+    \item \textbf{Activate ALP environment}:
+\begin{lstlisting}[style=terminal, language=bash]
+source ../install/bin/setenv
+\end{lstlisting}
 \end{enumerate}
 % Owner: PA
 % Source (ALP_Tutorial.tex - Installation on Linux, steps 2-3)
@@ -249,13 +257,13 @@ make install
 \begin{frame}[fragile]{2. ALP Installation}
 \framesubtitle{Setup Environment and Test}
 \begin{enumerate}
-    \item \textbf{Activate ALP environment}:
+    \item Return to the \textbf{ALP-Tutorial} directory:
 \begin{lstlisting}[style=terminal, language=bash]
-source ../install/bin/setenv
+cd ../ALP-Tutorial/scripts
 \end{lstlisting}
     \item \textbf{Compile example}:
 \begin{lstlisting}[style=terminal, language=bash]
-grbcxx ../examples/sp.cpp -o sp_example
+grbcxx sp.cpp -o sp_example
 \end{lstlisting}
     \item \textbf{Run}:
 \begin{lstlisting}[style=terminal, language=bash]
@@ -269,12 +277,12 @@ grbrun ./sp_example
 \begin{frame}[fragile]{3. Hands-on: Setting up scripts}
     \framesubtitle{ALP/GraphBLAS Overview}
     \begin{itemize}
-        \item You can find code skeletons for the tutorial in: \texttt{/some/path/to/alp/tutorial/scripts}
-        \item You should copy the scripts to your home directory: 
-\begin{lstlisting}[style=terminal, language=bash]
-cp -r /some/path/to/alp/tutorial/scripts ~/alp_tutorial_scripts
-cd ~/alp_tutorial_scripts && ls -l
-\end{lstlisting}
+        \item You can find code skeletons for the tutorial in: \texttt{path/to/alp-tutorial/scripts}
+%         \item You should copy the scripts to your home directory: 
+% \begin{lstlisting}[style=terminal, language=bash]
+% cp -r /some/path/to/alp/tutorial/scripts ~/alp_tutorial_scripts
+% cd ~/alp_tutorial_scripts && ls -l
+%\end{lstlisting}
         \item You can use any editor of your preference to edit these scripts (e.g. nano, vim, gedit)
         \item Run these commands to test your setup:
 \begin{lstlisting}[style=terminal, language=bash]
@@ -313,7 +321,7 @@ int main( int argc, char ** argv ) {
     int error_code = 100;
     
     grb::Launcher< grb::AUTOMATIC > launcher;
-    launcher.exec( &hello_world, fn, error_code, true );
+    assert( launcher.exec( &hello_world, fn, error_code, true ) == grb::SUCCESS );
     return error_code;
 }
         \end{lstlisting}
@@ -394,12 +402,12 @@ grb::Matrix<void> A(150000, 100000);
 \textbf{Exercise 2.} Allocate the following vectors and matrices:
 \begin{itemize}
     \item \texttt{grb::Vector<double>} \texttt{x}: length 100, capacity 100
-    \item \texttt{grb::Vector<double>} \texttt{y}: length 1\ 000, capacity 1\ 000
-    \item \texttt{grb::Matrix<double>} \texttt{A}: size $(100 \times 1\ 000)$, capacity 1\ 000
-    \item \texttt{grb::Matrix<double>} \texttt{B}: size $(100 \times 1\ 000)$, capacity 5\ 000
-    \item Start from \texttt{alp\_hw.cpp} 
+    \item \texttt{grb::Vector<double>} \texttt{y}: length 1000, capacity 1000
+    \item \texttt{grb::Matrix<double>} \texttt{A}: size $(100 \times 1000)$, capacity 1000
+    \item \texttt{grb::Matrix<double>} \texttt{B}: size $(100 \times 1000)$, capacity 5000
+    \item Start from \texttt{alp\_hw.cpp} (in the \texttt{hello\_world} function)
 \begin{lstlisting}[style=terminal, language=bash, basicstyle=\ttfamily\scriptsize\color{terminaltext}] 
-cp alp\_hw.cpp alp\_containers\_ex2.cpp 
+cp alp_hw.cpp alp_containers_ex2.cpp 
 \end{lstlisting}
     \item \textbf{Hint:} search the documentation for how to override the default capacities
 \end{itemize}
@@ -428,13 +436,6 @@ ALP/GraphBLAS containers use iterators and custom primitives to manipulate data:
     \item \texttt{grb::set(vector,scalar)}: sets all elements to \textit{scalar} (-> dense)
     \item \texttt{grb::setElement(vector,scalar,index)}: sets element at \textit{index} to \textit{scalar}
 \end{itemize}
-\vspace{1em}
-\textbf{C++ STL-compatible iterators:}
-\begin{lstlisting}[style=code, language=C++, basicstyle=\ttfamily\scriptsize]
-for( const auto &pair : y ) {
-    std::cout << "y[" << pair.first << "]=" << pair.second << "\n";
-}
-\end{lstlisting}
 % Owner: PA
 % Source (ALP_Tutorial.tex - Basic Container I/O)
 \end{frame}
@@ -451,7 +452,7 @@ for( const auto &pair : y ) {
     \end{itemize}
     Start from \texttt{alp\_containers\_ex2.cpp} 
 \begin{lstlisting}[style=terminal, language=bash, basicstyle=\ttfamily\scriptsize\color{terminaltext}] 
-cp alp\_containers\_ex2.cpp alp\_containers\_ex2.cpp 
+cp alp_containers_ex2.cpp alp_containers_ex3.cpp 
 \end{lstlisting}
     \textbf{Expected output:}
     \begin{lstlisting}[style=terminal, language=bash, basicstyle=\ttfamily\scriptsize\color{terminaltext}]
@@ -463,24 +464,28 @@ cp alp\_containers\_ex2.cpp alp\_containers\_ex2.cpp
 % Source (ALP_Tutorial.tex - Basic Container I/O, Exercise 3)
 \end{frame}
 
-
 \begin{frame}[fragile]{3.2. Hands-on: Basic Container I/O}
     \framesubtitle{Exercise 4: Itterators}
-    \textbf{Exercise 4.} Use output iterators to double-check that \texttt{x} has $497$ values and that all those values equal \texttt{false}:
-    \begin{itemize}
-        \item Use STL-compatible iterators to iterate over \texttt{x}
-        \item Count the number of entries and verify each value is \texttt{false}
-    \end{itemize}
-    Start from \texttt{alp\_containers\_ex3.cpp}
-    \begin{lstlisting}[style=terminal, language=bash, basicstyle=\ttfamily\scriptsize\color{terminaltext}] 
-    cp alp_containers_ex3.cpp alp_containers_ex4.cpp 
-    \end{lstlisting}
+ALP/GraphBLAS exposes \textbf{C++ STL-compatible iterators:}
+\begin{lstlisting}[style=code, language=C++, basicstyle=\ttfamily\scriptsize]
+for( const auto &pair : y ) {
+std::cout << "y[" << pair.first << "]=" << pair.second << "\n";
+}
+\end{lstlisting}
+
+\textbf{Exercise 4.} Use output iterators to double-check that \texttt{x} has $497$ values and that all those values equal \texttt{false}:
+\begin{itemize}
+    \item Use STL-compatible iterators to iterate over \texttt{x}
+    \item Count the number of entries and verify each value is \texttt{false}
+\end{itemize}
+Start from \texttt{alp\_containers\_ex3.cpp}
+\begin{lstlisting}[style=terminal, language=bash, basicstyle=\ttfamily\scriptsize\color{terminaltext}] 
+cp alp_containers_ex3.cpp alp_containers_ex4.cpp 
+\end{lstlisting}
     % Owner: PA
     % Source (ALP_Tutorial.tex - Basic Container I/O, Exercise 4)
 \end{frame}
-    
 
-    
 \begin{frame}[fragile]{3.2. Hands-on: Basic Container I/O}
     \framesubtitle{Container file I/O}
     ALP supports reading sparse matrices from common file formats(e.g. MatrixMarket \texttt{.mtx})
