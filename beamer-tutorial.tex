@@ -31,8 +31,8 @@
 \newunicodechar{—}{-}
 
 % Listing styles (Unicode-safe for later use)
-\definecolor{terminalback}{rgb}{0.1,0.1,0.1}
-\definecolor{terminaltext}{rgb}{0.9,0.9,0.9}
+\definecolor{terminalback}{rgb}{0.9,0.9,0.9}
+\definecolor{terminaltext}{rgb}{0.1,0.1,0.1}
 \lstdefinestyle{terminal}{
     backgroundcolor=\color{gray!20},
     basicstyle=\ttfamily\small\color{terminaltext},
@@ -77,8 +77,6 @@
 \lstset{style=cpp-rich}
 % alias macro (use in optional args: \begin{lstlisting}[\cpplistingstyle])
 \newcommand{\cpplistingstyle}{style=cpp-rich}
-% convenience environment: \begin{cppcode} ... \end{cppcode}
-\lstnewenvironment{cppcode}[1][]{\lstset{style=cpp-rich,#1}}{}
 
 \title{Algebraic Programming (ALP) Tutorial}
 %\subtitle{From HPC to GraphBLAS and Transition Paths}
@@ -861,7 +859,65 @@ int main( int argc, char **argv ) {
 \end{itemize}
 % Owner: DJ & AJ
 % Source (ALP_Transition_Path_Tutorial.tex - Intro):
-% ALP ... transition path APIs ... drop-in replacements ... re-link your program against ALP's libraries ...
+
+\end{frame}
+
+\begin{frame}[fragile]{Python: mxv with pyalp}
+\framesubtitle{Build a sparse matrix and call mxv across backends}
+
+\href{https://pypi.org/project/alp-graphblas/}{PyPI project: alp-graphblas}
+
+Install with:
+\begin{lstlisting}[style=terminal,language=bash]
+pip install "alp-graphblas"
+\end{lstlisting}
+
+\begin{lstlisting}[language=Python, basicstyle=\ttfamily\tiny, frame=single, showstringspaces=false]
+import numpy as np
+N, M = 5, 5
+idata = np.array([0,1,2,3,3,4, 2,3,3,4, 1,4, 1,4,4], dtype=np.int32)
+jdata = np.array([0,1,2,3,2,2, 1,4,1,1, 0,3, 0,3,4], dtype=np.int32)
+vdata = np.array([1,1,1,1,0.5,2, 1,4,4.4,1, 0,3.5, 0,3,1], dtype=np.float64)
+x_np = np.array([1.0, 1.0, 0.0, 0.3, -1.0], dtype=np.float64)
+A_dense = np.zeros((N, M), dtype=np.float64); A_dense[idata, jdata] += vdata
+for backendname in ['pyalp_ref','pyalp_omp']:
+  import pyalp; 
+  pyalp = pyalp.get_backend(backendname)
+  A = pyalp.Matrix(N, M, idata, jdata, vdata); 
+  x = pyalp.Vector(M, x_np)
+  y = pyalp.Vector(N, np.zeros(N)); 
+  pyalp.mxv(y, A, x); 
+  y_np = y.to_numpy()
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}{Python mxv: what each part does}
+\begin{itemize}
+  \item Import and backend selection
+  \begin{itemize}
+    \item \texttt{import pyalp; pyalp = pyalp.get\_backend(\emph{name})} picks a runtime backend (e.g., \texttt{pyalp\_ref}, \texttt{pyalp\_omp}).
+  \end{itemize}
+  \item Build containers from NumPy
+  \begin{itemize}
+    \item \texttt{Matrix(N,M,idata,jdata,vdata)} constructs a sparse A from COO arrays (0-based; duplicates coalesce by summation).
+    \item \texttt{Vector(M, x\_np)} wraps a dense NumPy array as an ALP vector.
+  \end{itemize}
+  \item Call mxv (two forms)
+  \begin{itemize}
+    \item Functional: \texttt{y = mxv(A,x)} returns a new vector.
+    \item Out-parameter: \texttt{mxv(y,A,x)} writes into preallocated \texttt{y}.
+  \end{itemize}
+  \item Convert and validate
+  \begin{itemize}
+    \item \texttt{y.to\_numpy()} copies the result to a NumPy array.
+    \item Build a dense reference with \texttt{A\_dense[idata, jdata] += vdata} and check \texttt{np.allclose}.
+  \end{itemize}
+  \item Tips
+  \begin{itemize}
+    \item Ensure the chosen backend module is installed and importable.
+    \item For larger problems, prefer CSR/CSC loaders (e.g., MatrixMarket parser) to avoid Python-side COO expansion overhead.
+  \end{itemize}
+\end{itemize}
 \end{frame}
 
 % =========================
@@ -869,10 +925,6 @@ int main( int argc, char **argv ) {
 % =========================
 
 \section{Monday 10 Nov, Afternoon}
-
-\subsection{7) Ising Machine}
-
-\begin{frame}{Ising Machine}
 \subsection{7) Ising Machine, new solvers}
 \begin{frame}[fragile]{ALP algorithms: overview}
 \begin{itemize}
