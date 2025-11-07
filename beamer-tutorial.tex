@@ -1023,20 +1023,225 @@ kcore_decomposition.hpp  norm.hpp
 % sparse_cg_init / set_preconditioner / solve / destroy — CRS inputs; non-blocking engine, synchronous API.
 \end{frame}
 
-\subsection{11) Hands-on: Section 8; CG example; Python example}
-\begin{frame}[fragile]{Hands-on: CG example}
+% 10.1 Transition path recap
+\begin{frame}{Transition path recap}
+\framesubtitle{Legacy code interface vs. algebraic reformulation}
 \begin{itemize}
-    \item Build CRS matrix
-    \item Call CG init/solve/destroy
-    \item Validate solution
+  \item \textbf{Idea:} A "transition path" lets existing (legacy) sparse / linear algebra code call ALP solvers through a thin C / C++ layer.
+  \item \textbf{No full rewrite:} You do \emph{not} need to express your algorithm in terms of ALP containers, semirings, masks, etc. – you keep CRS/CSR/COO data structures you already have.
+  \item \textbf{Cost:} Because the algorithm is not re-expressed algebraically, ALP cannot perform whole-program optimisations (kernel fusion, mask-aware reordering, mixed-type propagation) beyond the solver internals.
+  \item \textbf{Benefit:} Fast adoption: drop in a solver without changing surrounding application logic.
+  \item \textbf{Typical boundary:} Provide raw value / index arrays + dimensions + parameters; receive solution vector / status code.
+  \item \textbf{Takeaway:} Great for quick wins and incremental migration; limited for deep cross-kernel optimisation.
 \end{itemize}
-% Owner: DJ
-% Source (ALP_Transition_Path_Tutorial.tex - Example):
-% \begin{lstlisting}[language=C++]
-% // A (CRS), b, x; sparse_cg_init_dii(&handle, n, A_vals, A_cols, A_offs);
-% // sparse_cg_solve_dii(handle, x, b); sparse_cg_destroy_dii(handle);
-% \end{lstlisting}
 \end{frame}
+
+% 10.2 Black-box exposure & optimisation boundaries
+\begin{frame}{Transition path: Black-box algorithms exposure}
+\framesubtitle{What is (and is not) optimised}
+\begin{itemize}
+  \item \textbf{Exposed set:} Iterative solvers (CG, BiCGSTAB, GMRES, k-means, PageRank, connected components, etc.) via stable headers / ABI.
+  \item \textbf{Internals:} Inside each solver ALP leverages traits (associativity, identities, sparsity, mask semantics) for backend-specific scheduling and fusion.
+  \item \textbf{Boundary limit:} Data marshaling between your legacy structures and ALP containers is minimal but still a barrier; external loops remain opaque so global multi-primitive fusion cannot cross the ABI boundary.
+  \item \textbf{Performance model:} You gain highly-tuned inner iterations; you \emph{do not} gain automatic restructuring of surrounding pre/post processing steps.
+  \item \textbf{When to move further:} If pre/post steps dominate runtime or you want algebraic transformations (e.g. descriptor-based masking), consider refactoring those steps into ALP primitives.
+\end{itemize}
+\end{frame}
+
+% 10.3 C++ Conjugate Gradient & Preconditioned CG interface
+\begin{frame}[fragile]{Transition path: Conjugate Gradient (CG) C++ interface}
+\framesubtitle{Minimal handle lifecycle (legacy CRS input)}
+\small
+\begin{itemize}
+  \item \textbf{Inputs (CRS):} \verb|A_vals[nnz]|, \verb|A_cols[nnz]| (column indices), \verb|A_offs[n+1]| (row offsets), dimension \verb|n|.
+  \item \textbf{Vectors:} Right-hand side \verb|b[n]|, initial guess \verb|x[n]| (in/out).
+  \item \textbf{Parameters:} Max iterations, tolerance, (optional) convergence callback.
+  \item \textbf{Lifecycle:} init \(\rightarrow\) (optional preconditioner attach) \(\rightarrow\) solve loop \(\rightarrow\) destroy.
+  \item \textbf{Code:} See Listing~\ref{lst:cg-cpp-interface} for a minimal example.
+  \item \textbf{External reference:} solver headers live under\newline \url{https://github.com/Algebraic-Programming/ALP/tree/develop/src/transition} (see \texttt{solvers.cpp}).
+\end{itemize}
+
+\end{frame}
+\begin{frame}[fragile]{Transition path: Conjugate Gradient (CG) C++ interface - continued}
+
+\begin{lstlisting}[language=C++,basicstyle=\ttfamily\scriptsize, caption={CG handle lifecycle (CRS inputs)}, label={lst:cg-cpp-interface}]
+#include <graphblas/algorithms/conjugate_gradient.hpp>
+
+// Raw CRS arrays (double precision)
+extern const double *A_vals;      // length nnz
+extern const size_t *A_cols;      // length nnz
+extern const size_t *A_offs;      // length n+1
+size_t n; // dimension
+
+// Solution and RHS
+std::vector<double> x(n, 0.0);    // initial guess
+std::vector<double> b = load_rhs(n);
+
+grb_cg_handle handle = nullptr; // opaque handle type from ABI
+int rc = sparse_cg_init_dii(&handle, n, A_vals, A_cols, A_offs);
+if(rc) { /* error handling */ }
+
+// Optional: attach simple Jacobi preconditioner (diagonal inverse)
+// sparse_cg_set_precond_d(handle, diag_inv_ptr);
+
+rc = sparse_cg_solve_dii(handle, x.data(), b.data(), /*maxIters=*/1000, /*tol=*/1e-8);
+
+
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Transition path: Conjugate Gradient (CG) C++ interface - continued}
+\begin{lstlisting}[language=C++,basicstyle=\ttfamily\scriptsize]
+
+
+
+// x now contains solution
+int its = sparse_cg_get_iters(handle);
+double resnrm = sparse_cg_get_residual(handle);
+
+sparse_cg_destroy_dii(handle);
+\end{lstlisting}
+\begin{itemize}
+  \item Suffix \verb|_dii| indicates a concrete template instantiation (double + integer index types).
+  \item Preconditioner attach call depends on provided header; typical: pass pointer to values or functor (if fully templated in header-only mode).
+\end{itemize}
+\end{frame}
+
+% 10.4 Preconditioned CG specifics
+\begin{frame}[fragile]{Transition path: Preconditioned CG specifics}
+\framesubtitle{Supplying a preconditioner}
+\small
+\begin{itemize}
+  \item \textbf{Jacobi / diagonal:} Provide array of inverse diagonal entries (or a functor that applies \(M^{-1}v\)).
+  \item \textbf{ILU(0)/IC(0):} Build outside ALP; pass CRS of \(M\) if interface supports sparse application routine.
+  \item \textbf{AMGCL:} Use existing AMGCL interface; pass CRS of \(M\) and wrap application.
+\end{itemize}
+\vspace{-0.5em}
+\begin{lstlisting}[language=C++,basicstyle=\ttfamily\scriptsize]
+struct DiagInv {
+  const double *dinv;
+  void apply(const double *in, double *out) const {
+    // element-wise scale
+    for(size_t i=0;i<n;++i) out[i] = dinv[i] * in[i];
+  }
+};
+// Templated init might look like:
+auto pcg = grb::algorithms::make_pcg<double,int>(A_vals,A_cols,A_offs,n);
+pcg.set_preconditioner(DiagInv{diag_inv_ptr});
+pcg.solve(x.data(), b.data(), 1e-8, 1000);
+\end{lstlisting}
+\begin{itemize}
+  \item \textbf{Opaque ABI vs templates:} ABI layer exposes fixed signatures (e.g. \verb|_dii|); template interface offers richer composition (callbacks, custom operators) when building from source.
+  \item \textbf{Fallback:} If no preconditioner is set, solver defaults to plain CG.
+\end{itemize}
+\end{frame}
+
+%% 11 Hands-on: Section 8; CG example; Python example
+\subsection{11) Hands-on: Section 8; CG example; Python example}
+\begin{frame}[fragile]{Python: Conjugate Gradient usage}
+\framesubtitle{Calling a solver from a wheel}
+\begin{lstlisting}[language=Python]
+    import numpy as np
+    import pyalp   # local build or PyPI wheel (alp-graphblas)
+    pyalp = pyalp.get_backend('pyalp_ref')  # or 'pyalp_omp'
+    # Generate a small sparse linear system using numpy arrays
+    N, M = 5, 5
+    idata = np.array([0, 1, 2, 3, 3, 4, 2, 3, 3, 4, 1, 4, 1, 4, 4], dtype=np.int32)
+    jdata = np.array([0, 1, 2, 3, 2, 2, 1, 4, 1, 1, 0, 3, 0, 3, 4], dtype=np.int32)
+    vdata = np.array([1, 1, 1, 1, 0.5, 2, 1, 4, 4.4, 1, 0, 3.5, 0, 3, 1], dtype=np.float64)
+    b = np.array([1.0, 1.0, 1.0, 1.0, 1.0], dtype=np.float64)
+    x = np.array([1.0, 1.0, 0.0, 0.3, -1.0], dtype=np.float64)
+    r = np.zeros(5, dtype=np.float64)
+    u = np.zeros(5, dtype=np.float64)
+    tmp = np.zeros(5, dtype=np.float64)
+    # Create the pyalp Matrix and Vector objects
+    alpmatrixA = pyalp.Matrix(5, 5, idata, jdata, vdata)
+    alpvectorx = pyalp.Vector(5, x)
+    alpvectorb = pyalp.Vector(5, b)
+    alpvectorr = pyalp.Vector(5, r)
+    alpvectoru = pyalp.Vector(5, u)
+    alpvectortmp = pyalp.Vector(5, tmp)
+
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Python: Conjugate Gradient usage — continued}
+\begin{lstlisting}[language=Python, basicstyle=\ttfamily\tiny, frame=single, showstringspaces=false]
+
+    maxiterations = 2000
+    verbose = 1
+    # Solve the linear system using the conjugate gradient method in the backend
+    iterations, residual = pyalp.conjugate_gradient(
+		alpmatrixA, alpvectorx,alpvectorb,alpvectorr,alpvectoru,
+		alpvectortmp,maxiterations,verbose,
+    )
+    print('iterations =', iterations)
+    print('residual =', residual)
+
+    # Convert the result vector to a numpy array and print it
+    x_result = alpvectorx.to_numpy()
+    print('x_result =', x_result)
+
+\end{lstlisting}
+\normalsize
+\begin{itemize}
+  \item \textbf{Exposed variants:} Only fully instantiated numeric signatures (e.g. double + 32/64-bit indices) appear in the Python module; generic templates are not dynamically instantiated.
+  \item \textbf{Local build advantages:} Native optimisations enabled. Additional backends and template instantiations available compared to PyPI wheels.
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Python: Conjugate Gradient usage — continued}
+\begin{itemize}
+
+  \item \textbf{Current coverage (indicative):}
+    \begin{itemize}
+      \item PyPI wheels: Linux x86\_64 (manylinux) and macOS 15 ARM64; CPython 3.9--3.12; common solvers (CG, GMRES, PageRank).
+      \item Local source build: may enable additional backends and template instantiations.
+    \end{itemize}
+  \item \textbf{Optimisation boundary:} Same as C++ transition path – solver internals optimised; external NumPy assembly steps not transformed.
+  \item \textbf{Tip:} For repeated solves with changing RHS, reuse the handle to avoid re-analysis of \(A\).
+\end{itemize}
+\end{frame}
+
+% 11 Python build & performance notes
+\begin{frame}[fragile]{Python build \& performance notes}
+\begin{itemize}
+  \item \textbf{Local wheel build:} Use \verb|pip install .| in source checkout to expose extra backends and template instantiations needed for your precision/index mix.
+  \item \textbf{PyPI wheel constraints:} Size limits and manylinux policy restrict included backends; heavy experimental code often excluded.
+  \item \textbf{Threading:} \verb|pyalp_omp| maps to OpenMP settings (control via \verb|OMP_NUM_THREADS|); reference backend single-threaded.
+  \item \textbf{Memory:} Provide contiguous NumPy arrays; zero-copy wrappers reduce overhead when dtypes match expected C++ signatures.
+  \item \textbf{Scaling path:} Migrate hot pre/post operations (vector assembly, residual checks) into ALP primitives for additional gains once baseline CG is stable.
+\end{itemize}
+\end{frame}
+
+% 11 PyPI distribution snapshot
+\begin{frame}[fragile]{PyPI: \texttt{alp-graphblas} 0.8.41 distribution files}
+\framesubtitle{Download files overview}
+\small
+	extit{Link:} \url{https://pypi.org/project/alp-graphblas/0.8.41/\#files}
+\begin{itemize}
+  \item \textbf{Release date:} 4 Nov 2025
+  \item \textbf{Source distribution:} \emph{none for this release}
+  \item \textbf{Binary wheels (CPython 3.9--3.12):} Linux x86\_64 (manylinux\_2\_17) and macOS 15 ARM64
+\end{itemize}
+\vspace{-0.5em}
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize]
+File set (size):
+cp39  manylinux_x86_64  (1.7 MB)  macOS15_arm64 (492.9 kB)
+cp310 manylinux_x86_64  (1.7 MB)  macOS15_arm64 (492.9 kB)
+cp311 manylinux_x86_64  (1.7 MB)  macOS15_arm64 (492.9 kB)
+cp312 manylinux_x86_64  (1.7 MB)  macOS15_arm64 (492.9 kB)
+\end{lstlisting}
+\vspace{-0.5em}
+\begin{itemize}
+  \item \textbf{Install example:} \verb|pip install alp-graphblas==0.8.41|
+  \item \textbf{Platform gaps:} No Windows wheels yet; build from source for other OS/architectures.
+  \item \textbf{Why sizes differ:} Linux wheels include compiled OpenMP objects; macOS ARM64 build smaller.
+  \item \textbf{Tip:} Need extra backends or template instantiations? Clone repo and run \verb|pip wheel .| locally.
+\end{itemize}
+\normalsize
+\end{frame}
+
 
 \subsection{12) Stretch goal: SPMD and bsp1d backend}
 \begin{frame}{SPMD and bsp1d backend (stretch)}
