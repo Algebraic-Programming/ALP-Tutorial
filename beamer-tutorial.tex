@@ -1094,17 +1094,42 @@ kcore_decomposition.hpp  norm.hpp
     \end{itemize}
     \item \textbf{Applications:}
     \begin{itemize}
-        \item \textbf{Model-based optimization:} Predict performance before execution
+        \item \textbf{Performance modeling:} Predict performance before execution
         \item \textbf{Autotuning:} Automatically find optimal configurations and parameters
-        \item \textbf{Algorithm reformulation:} Adapt/choose algorithms to fit hardware
+        \item \textbf{Algorithm co-design:} Adapt/choose algorithms to fit the hardware
         \item \textbf{HW-SW co-design:} Choose/evaluate/design hardware for specific algorithms
     \end{itemize}
-    \item \textbf{Outcome:} Hardware-efficient algorithms $\leftrightarrow$ Software-aware hardware tuning
+    \item \textbf{Outcome:} A platform for automatic algorithm optimization and hardware utilization.
 \end{itemize}
 % Owner: PA
 \end{frame}
 
 \begin{frame}{HIPO: Introduction and Motivation}
+\framesubtitle{Why ALP/GraphBLAS?}
+\begin{itemize}
+    \item \textbf{ALP/GraphBLAS characteristics:}
+    \begin{itemize}
+        \item Hardware-unaware, hardware-independent user code
+        \item Backend handles hardware-specific optimizations internally
+        \item Easy-to-use software solution that optimizes execution automatically
+    \end{itemize}
+    \item \textbf{Why it's ideal for HIPO:}
+    \begin{itemize}
+        \item Clear separation: algorithm (what) vs.\ backend (how)
+        \item Multiple backends: same code, different hardware targets
+        \item Internal optimization opportunities: fusion, scheduling, kernel dispatch, tiling etc
+    \end{itemize}
+    \item \textbf{HIPO can enhance ALP:}
+    \begin{itemize}
+        \item Model-driven backend selection and optimization
+        \item Autotuning for backend parameters
+        \item ``Free'' performance improvement for end users
+    \end{itemize}
+\end{itemize}
+% Owner: PA
+\end{frame}
+
+\begin{frame}{HIPO Modeling}
 \framesubtitle{Why ALP/GraphBLAS?}
 \begin{itemize}
     \item \textbf{ALP/GraphBLAS characteristics:}
