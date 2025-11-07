@@ -50,7 +50,7 @@
     basicstyle=\ttfamily\small, frame=single, breaklines=true, showstringspaces=false,
     rulecolor=\color{black}, numbers=none, keepspaces=true, captionpos=b, tabsize=2,
     language=C++,
-    literate={·}{{$\cdot$}}1 {⊙}{{$\odot$}}1 {ᵀ}{{$^\top$}}1 {×}{{$\times$}}1 {‐}{{-}}1 {“}{{"`}}1 {”}{{'"}}1
+    literate={·}{{$\cdot$}}1 {⊙}{{$\odot$}}1 {ᵀ}{{$^\top$}}1 {×}{{$\times$}}1 {‐}{{-}}1 {"}{{"`}}1 {"}{{'"}}1
 }
 
 
@@ -71,7 +71,7 @@
   keepspaces=true,
   tabsize=2,
   backgroundcolor=\color[rgb]{0.95,0.95,0.95},
-  literate={·}{{$\cdot$}}1 {⊙}{{$\odot$}}1 {ᵀ}{{$^\top$}}1 {×}{{$\times$}}1 {‐}{{-}}1 {–}{{-}}1 {—}{{-}}1 {“}{{"`}}1 {”}{{'"}}1
+  literate={·}{{$\cdot$}}1 {⊙}{{$\odot$}}1 {ᵀ}{{$^\top$}}1 {×}{{$\times$}}1 {‐}{{-}}1 {–}{{-}}1 {—}{{-}}1 {"}{{"`}}1 {"}{{'"}}1
 }
 % make it the default
 \lstset{style=cpp-rich}
@@ -822,7 +822,7 @@ int main( int argc, char **argv ) {
     // 3) Create two result vectors y and z (dimension 3) and set to zero
     // TODO 3: Create y and z with proper type
 
-    // 4) Use the built-in “plusTimes” semiring alias
+    // 4) Use the built-in "plusTimes" semiring alias
     //      (add = plus, multiply = times, id‐add = 0.0, id-mul = 1.0)
     auto plusTimes = grb::semirings::plusTimes<double>();
 
@@ -1252,15 +1252,6 @@ cp312 manylinux_x86_64  (1.7 MB)  macOS15_arm64 (492.9 kB)
 % Owner: AJ  % TODO: install lpf
 \end{frame}
 
-\subsection{13) Performance model, high level intro and results}
-\begin{frame}{Performance model}
-\begin{itemize}
-    \item BSP/HBSP overview
-    \item Cost components and examples
-\end{itemize}
-% Owner: PA/
-\end{frame}
-
 % =========================
 % HIPO: 
 % =========================
@@ -1370,75 +1361,84 @@ cp312 manylinux_x86_64  (1.7 MB)  macOS15_arm64 (492.9 kB)
 \end{frame}
 
 \begin{frame}{HIPO Modeling}
-\framesubtitle{k-Multi-BSP: Extending Multi-BSP with 'k-Stream' logic}
+\framesubtitle{k-Multi-BSP: Hardware parameters}
+\begin{columns}[T,totalwidth=\textwidth]
+\column{0.5\textwidth}
+Levels $l = 0..d$ with throughput vector
 \begin{itemize}
-\item \textbf{Hierarchy}: retain Multi-BSP levels and supersteps
-\begin{itemize}
-    \item Levels map to cores $\rightarrow$ caches $\rightarrow$ numa hierarchy ( $\rightarrow$ nodes? - TBD)
-    \item Keep the bulk-synchronous execution semantics (supersteps etc)
+  \item $r_v(0) = (r_{\text{scalar}}, r_{\text{vec\_SIMD}})$
+  \item Inverse bandwidth $g(l)$ ($\tfrac{\text{s}}{\text{byte access}}$)
+  \item Latency $ls(l)$
+  \item Available memory $m(l)$
+  \item Sub-components count $p(l)$
+  \item Stream capacity $kmax(l)$
+  \begin{itemize}
+    \item For maintaining peak throughput
+  \end{itemize}
 \end{itemize}
-\item \textbf{$k$-streams concept}: Model concurrent accesses to different memory regions
-\begin{itemize}
-    \item Streams are the theoretical parallel access paths within a superstep
-    \item Capture consecutive vs. non-consecutive access patterns
-\end{itemize}
-\item \textbf{Thread count/allocation} $\rightarrow$ different hardware hierarchies
-\begin{itemize}
-    \item Different thread counts or affinity treated as \textit{different hardware instances/systems}
-    \item Enables exploring scheduling choices without expending the model's parameter space.
-\end{itemize}
-\item \textbf{For ALP primitives}: Must bridge implementations $\leftrightarrow$ hardware model
-\begin{itemize}
-    \item Currently kernels are not written in multi-BSP hierarchical/recursive logic.
-    \item \textbf{Assumption:} Kernels matched to levels based on their working set (mem footprint).
-    \begin{itemize}
-      \item Use memory footprint to pick the lowest level $m_i$ that fits the working set.
-      \item Optionally incorporate thread allocation to infer NUMA effects by swapping levels
-    \end{itemize}
-\end{itemize}
-\end{itemize}
+\column{0.5\textwidth}
+\centering
+\begin{tikzpicture}[font=\small,
+  level distance=1cm,
+  sibling distance=0.5cm,
+  edge from parent/.style={draw, thick, -{Latex[length=2.3mm]}}]
+  \tikzstyle{level 1}=[sibling distance=2 cm]
+  \tikzstyle{level 2}=[sibling distance=0.5 cm]
+  \tikzstyle{nodebox}=[draw=gray!60, rounded corners=2pt, minimum width=0.38cm, minimum height=0.3cm, fill=gray!10]
+
+  \node[nodebox, fill=green!10] (lvl2root) {}
+    child { node[nodebox, fill=blue!10] (lvl1left) {}
+            child { node[nodebox, fill=gray!15, very thick] (rootL) {} }
+            child { node[nodebox, fill=gray!15, very thick] {} }
+            child { node[nodebox, fill=gray!15, very thick] {} }
+            child { node[nodebox, fill=gray!15, very thick] {} }
+          }
+    child { node[nodebox, fill=blue!10] (lvl1right) {}
+            child { node[nodebox, fill=gray!15, very thick] (rootR) {} }
+            child { node[nodebox, fill=gray!15, very thick] {} }
+            child { node[nodebox, fill=gray!15, very thick] {} }
+            child { node[nodebox, fill=gray!15, very thick] {} }
+          };
+
+  \node[right=2.3cm of lvl2root, font=\scriptsize, text=black!70, align=left] {level 2 ($p(2)=2$)\\ $g(2),\ ls(2),\ m(2)$};
+  \node[right=1.3cm of lvl1right, font=\scriptsize, text=black!70, align=left] {level 1 ($p(1)=4$)\\ $g(1),\ ls(1),\ m(1)$};
+  \node[right=2cm of rootR, font=\scriptsize, text=black!70, align=left] {level 0 ($p(0)=1$)\\ $g(0) = ls(0) =  m(0) = 0$};
+
+  \node[below=0.5cm of rootR, font=\scriptsize, text=black!70] {Example 3-level hierarchy};
+\end{tikzpicture}
+\end{columns}
 % Owner: PA
 \end{frame}
 
 \begin{frame}{HIPO Modeling}
-\framesubtitle{k-Multi-BSP Model notation (Work in Progress)}
-\footnotesize
+\framesubtitle{k-Multi-BSP: Algorithm parameters and cost}
+\begin{itemize}
+\item Supersteps $i = 0..n$ with participants $s = 0..p(l)$
+\item Work vectors at the leaf level: $w_v(i,s,l=0) = (w_{\text{scalar}}, w_{\text{vec\_SIMD}})$
+\item Stream descriptors $ks(i,s,l)$ for disjoint memory regions (0..$kmax(l)$)
+\item Traffic descriptors $t(i,s,l,k)$, $v(i,s,l,k)$ for bytes sent/received
+\end{itemize}
+\vspace{0.5em}
 \begin{columns}[t]
 \column{0.48\textwidth}
-\textbf{Hardware parameters}
-\begin{itemize}
-    \item Levels $l = 0..d$ with $r_v(l) = (r_{\text{scalar}}, r_{\text{vec\_SIMD}})$
-    \item Bandwidth $g(l)$ (inverse BW in s/access), latency $ls(l)$
-    \item Memory budget $m(l)$, sub-components $p(l)$
-    \item Stream capacity $kmax(l)$
-\end{itemize}
-\textbf{Communication cost}
-\begin{equation*}
-    c_{\text{comm}}(i,l) = \max_{s,k} h(i,s,l,k) \cdot g(l) + ls(l)
-\end{equation*}
-
-\column{0.48\textwidth}
-\textbf{Algorithm parameters}
-\begin{itemize}
-    \item Supersteps $i = 0..n$, participants $s = 0..p(l)$
-    \item Work vectors $w_v(i,s,l=0) = (w_{\text{scalar}}, w_{\text{vec\_SIMD}})$
-    \item Streams $ks(i,s,l)$ accessing disjoint regions
-    \item Traffic descriptors $t(i,s,l,k)$, $v(i,s,l,k)$ in bytes sent/received
-\end{itemize}
-\textbf{Computation cost}
-\begin{equation*}
+\textbf{Per-superstep computation cost}\\[0.2em]
+\[
     c_{\text{comp}} = \max\left( \frac{r_{\text{scalar}}}{w_{\text{scalar}}}, \frac{w_{\text{vec\_SIMD}}}{ops_{\text{SIMD}}} \right)
-\end{equation*}
+\]
+\column{0.48\textwidth}
+\textbf{Per-level communication cost}\\[0.2em]
+\[
+    c_{\text{comm}}(i,l) = \max_{s,k} h(i,s,l,k) \cdot g(l) + ls(l)
+\]
 \end{columns}
-\normalsize
-\vspace{0.5em}
 \textbf{Total cost aggregation}
-\begin{equation*}
-    T = \sum_{l=0}^{d} f\Big( \sum_{i=0}^{n} c_{\text{comm}}(i,l),\, c_{\text{comp}} \Big),\quad f \in \{\max, +\}
-\end{equation*}
+\[
+    T = \sum_{l=0}^{d} f\Big( \sum_{i=0}^{n} c_{\text{comm}}(i,l),\, c_{\text{comp}} \Big), \quad f \in \{\max, +\}
+\]
 \textbf{Simplified memory-bound variant}: assume uniform per process, drop $r_v$, $w_v$, $s$; cost reduces to $T = \sum_{i,l,k} c_{\text{comm}}(i,l)$ with $6d+1$ HW params and $1 + n d (ks+1)$ algo params.
 % Owner: PA
 \end{frame}
+
 \subsection{14) SPMD execution, Replica exchange}
 
 % \begin{frame}{SPMD execution, Replica exchange}
