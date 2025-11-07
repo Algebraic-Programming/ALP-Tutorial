@@ -1129,31 +1129,111 @@ kcore_decomposition.hpp  norm.hpp
 % Owner: PA
 \end{frame}
 
+
 \begin{frame}{HIPO Modeling}
-\framesubtitle{Why ALP/GraphBLAS?}
+\framesubtitle{Current models and their limitations}
+  \textbf{Target: Universal model} $\rightarrow$ Modeling any current/future hw architecture/solver.\\
+  \begin{itemize}
+    \item \textbf{Trade-off:} Accuracy $\leftrightarrow$ applicability.
+    \end{itemize}
+  \vfill
+  \textbf{Existing models:}\\
 \begin{itemize}
-    \item \textbf{ALP/GraphBLAS characteristics:}
+  \item \textbf{Roofline}: Simple model, latency-unaware and hardware-centric
+  \begin{itemize}
+  \item Lacks an algorithm-side structure to drive co-design decisions
+  \end{itemize}
+  \item \textbf{BSP}: Single-level communication/latency aware model
+  \begin{itemize}
+  \item Not suitable for on-node memory/cache/NUMA modeling
+  \end{itemize}
+  \item \textbf{NUMA-BSP}: Adds NUMA-awareness, stays relatively simple
+  \begin{itemize}
+  \item Still lacks the option to express deeper hierarchies (private/shared memories)
+  \end{itemize}
+  \item \textbf{Multi-BSP}: closest fit $\rightarrow$ hierarchical(HW) and recursive(ALGO)
+  \begin{itemize}
+  \item Still requires algorithms written explicitly in recursive supersteps. 
+  \item Cannot expose irregular('bad') vs consequtive('good') access patterns
+  \begin{itemize}
+    \item Common in sparse algorithms/kernels, important for performance.
+  \end{itemize}
+  \end{itemize}
+\end{itemize}
+\textbf{Our goal:} Multi-BSP-like + irregular access patterns + relaxed algorithmic representation
+% Owner: PA
+\end{frame}
+
+\begin{frame}{HIPO Modeling}
+\framesubtitle{k-Multi-BSP: Extending Multi-BSP with 'k-Stream' logic}
+\begin{itemize}
+\item \textbf{Hierarchy}: retain Multi-BSP levels and supersteps
+\begin{itemize}
+    \item Levels map to cores $\rightarrow$ caches $\rightarrow$ numa hierarchy ( $\rightarrow$ nodes? - TBD)
+    \item Keep the bulk-synchronous execution semantics (supersteps etc)
+\end{itemize}
+\item \textbf{$k$-streams concept}: Model concurrent accesses to different memory regions
+\begin{itemize}
+    \item Streams are the theoretical parallel access paths within a superstep
+    \item Capture consecutive vs. non-consecutive access patterns
+\end{itemize}
+\item \textbf{Thread count/allocation} $\rightarrow$ different hardware hierarchies
+\begin{itemize}
+    \item Different thread counts or affinity treated as \textit{different hardware instances/systems}
+    \item Enables exploring scheduling choices without expending the model's parameter space.
+\end{itemize}
+\item \textbf{For ALP primitives}: Must bridge implementations $\leftrightarrow$ hardware model
+\begin{itemize}
+    \item Currently kernels are not written in multi-BSP hierarchical/recursive logic.
+    \item \textbf{Assumption:} Kernels matched to levels based on their working set (mem footprint).
     \begin{itemize}
-        \item Hardware-unaware, hardware-independent user code
-        \item Backend handles hardware-specific optimizations internally
-        \item Easy-to-use software solution that optimizes execution automatically
+      \item Use memory footprint to pick the lowest level $m_i$ that fits the working set.
+      \item Optionally incorporate thread allocation to infer NUMA effects by swapping levels
     \end{itemize}
-    \item \textbf{Why it's ideal for HIPO:}
-    \begin{itemize}
-        \item Clear separation: algorithm (what) vs.\ backend (how)
-        \item Multiple backends: same code, different hardware targets
-        \item Internal optimization opportunities: fusion, scheduling, kernel dispatch, tiling etc
-    \end{itemize}
-    \item \textbf{HIPO can enhance ALP:}
-    \begin{itemize}
-        \item Model-driven backend selection and optimization
-        \item Autotuning for backend parameters
-        \item ``Free'' performance improvement for end users
-    \end{itemize}
+\end{itemize}
 \end{itemize}
 % Owner: PA
 \end{frame}
 
+\begin{frame}{HIPO Modeling}
+\framesubtitle{k-Multi-BSP Model notation (Work in Progress)}
+\footnotesize
+\begin{columns}[t]
+\column{0.48\textwidth}
+\textbf{Hardware parameters}
+\begin{itemize}
+    \item Levels $l = 0..d$ with $r_v(l) = (r_{\text{scalar}}, r_{\text{vec\_SIMD}})$
+    \item Bandwidth $g(l)$ (inverse BW in s/access), latency $ls(l)$
+    \item Memory budget $m(l)$, sub-components $p(l)$
+    \item Stream capacity $kmax(l)$
+\end{itemize}
+\textbf{Communication cost}
+\begin{equation*}
+    c_{\text{comm}}(i,l) = \max_{s,k} h(i,s,l,k) \cdot g(l) + ls(l)
+\end{equation*}
+
+\column{0.48\textwidth}
+\textbf{Algorithm parameters}
+\begin{itemize}
+    \item Supersteps $i = 0..n$, participants $s = 0..p(l)$
+    \item Work vectors $w_v(i,s,l=0) = (w_{\text{scalar}}, w_{\text{vec\_SIMD}})$
+    \item Streams $ks(i,s,l)$ accessing disjoint regions
+    \item Traffic descriptors $t(i,s,l,k)$, $v(i,s,l,k)$ in bytes sent/received
+\end{itemize}
+\textbf{Computation cost}
+\begin{equation*}
+    c_{\text{comp}} = \max\left( \frac{r_{\text{scalar}}}{w_{\text{scalar}}}, \frac{w_{\text{vec\_SIMD}}}{ops_{\text{SIMD}}} \right)
+\end{equation*}
+\end{columns}
+\normalsize
+\vspace{0.5em}
+\textbf{Total cost aggregation}
+\begin{equation*}
+    T = \sum_{l=0}^{d} f\Big( \sum_{i=0}^{n} c_{\text{comm}}(i,l),\, c_{\text{comp}} \Big),\quad f \in \{\max, +\}
+\end{equation*}
+\textbf{Simplified memory-bound variant}: assume uniform per process, drop $r_v$, $w_v$, $s$; cost reduces to $T = \sum_{i,l,k} c_{\text{comm}}(i,l)$ with $6d+1$ HW params and $1 + n d (ks+1)$ algo params.
+% Owner: PA
+\end{frame}
 \subsection{14) SPMD execution, Replica exchange}
 
 % \begin{frame}{SPMD execution, Replica exchange}
