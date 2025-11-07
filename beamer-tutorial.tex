@@ -1144,7 +1144,8 @@ sparse_cg_destroy_dii(handle);
 \begin{itemize}
   \item \textbf{Jacobi / diagonal:} Provide array of inverse diagonal entries (or a functor that applies \(M^{-1}v\)).
   \item \textbf{ILU(0)/IC(0):} Build outside ALP; pass CRS of \(M\) if interface supports sparse application routine.
-  \item \textbf{AMGCL:} Use existing AMGCL interface; pass CRS of \(M\) and wrap application.
+  %\item \textbf{AMGCL:} Use existing AMGCL interface; pass CRS of \(M\) and wrap application.
+  % not sure if AMGCL works with GC yet
 \end{itemize}
 \vspace{-0.5em}
 \begin{lstlisting}[language=C++,basicstyle=\ttfamily\scriptsize]
@@ -1220,6 +1221,8 @@ pcg.solve(x.data(), b.data(), 1e-8, 1000);
 \end{itemize}
 \end{frame}
 
+
+
 \begin{frame}[fragile]{Python: Conjugate Gradient usage — continued}
 \begin{itemize}
 
@@ -1248,7 +1251,7 @@ pcg.solve(x.data(), b.data(), 1e-8, 1000);
 \begin{frame}[fragile]{PyPI: \texttt{alp-graphblas} 0.8.41 distribution files}
 \framesubtitle{Download files overview}
 \small
-	extit{Link:} \url{https://pypi.org/project/alp-graphblas/0.8.41/\#files}
+  \textit{Link:} \url{https://pypi.org/project/alp-graphblas/0.8.41/\#files}
 \begin{itemize}
   \item \textbf{Release date:} 4 Nov 2025
   \item \textbf{Source distribution:} \emph{none for this release}
@@ -1272,7 +1275,78 @@ cp312 manylinux_x86_64  (1.7 MB)  macOS15_arm64 (492.9 kB)
 \normalsize
 \end{frame}
 
+% =========================
+% Exercise 9 (Python CG backends)
+% =========================
+\begin{frame}[fragile]{Exercise 9: Python Conjugate Gradient}
+\framesubtitle{Hands-on: solve with two backends and compare}
+  \textbf{Goal:} Use the Python wheel (or local build) to run Conjugate Gradient on a small sparse system with both \texttt{pyalp\_ref} and \texttt{pyalp\_omp}.
+\vspace{0.35em}
+  \textbf{Tasks}\small
+\begin{itemize}
+  \item Install: \verb|pip install alp-graphblas| (or build locally for extra backends)
+  \item Construct a small random symmetric positive definite (SPD) matrix \(A\) and vectors \(b, x_0\)
+  \item Run CG using backend names: \texttt{pyalp\_ref}, \texttt{pyalp\_omp}
+  \item Record: iterations, final residual, runtime (use Python's \verb|time.perf_counter()|)
+  \item (Stretch) Vary tolerance (1e-6, 1e-10) and note iteration changes
+\end{itemize}
+\vspace{0.25em}
+  \textbf{Deliverable:} A tiny table: backend vs iterations vs residual vs time.
+\end{frame}
 
+\begin{frame}[fragile]{Exercise 9: Starter code (Python)}
+\framesubtitle{Fill in TODOs (timing, SPD generation, loop)}
+\begin{lstlisting}[language=Python, basicstyle=\ttfamily\scriptsize, frame=single, showstringspaces=false, caption={Exercise 9 starter}, label={lst:exercise9-starter}]
+import numpy as np, time
+import pyalp
+
+# TODO 1: pick backend list
+backends = ["pyalp_ref", "pyalp_omp"]
+
+# Build a small random symmetric positive definite matrix A (size n)
+n = 64
+np.random.seed(42)
+R = np.random.randn(n, n)
+A_dense = R.T @ R + 0.1 * np.eye(n)  # SPD tweak (add diagonal)
+
+# Convert dense SPD to COO triplets (could also threshold to make sparse)
+I, J = np.nonzero(A_dense)
+V = A_dense[I, J].astype(np.float64)
+
+# Right-hand side and initial guess
+b_np = np.ones(n, dtype=np.float64)
+x0_np = np.zeros(n, dtype=np.float64)
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Exercise 9: Starter code (Python) — continued}
+\begin{lstlisting}[language=Python, basicstyle=\ttfamily\scriptsize, frame=single, showstringspaces=false]
+
+results = []
+for name in backends:
+    backend = pyalp.get_backend(name)
+    # Containers
+    A = backend.Matrix(n, n, I.astype(np.int32), J.astype(np.int32), V)
+    x = backend.Vector(n, x0_np.copy())
+    b = backend.Vector(n, b_np)
+    r = backend.Vector(n, np.zeros(n))
+    u = backend.Vector(n, np.zeros(n))
+    tmp = backend.Vector(n, np.zeros(n))
+    maxiters, tol, verbose = 2000, 1e-8, 0
+    t0 = time.perf_counter()
+    its, res = backend.conjugate_gradient(A, x, b, r, u, tmp, maxiters, verbose)
+    dt = time.perf_counter() - t0
+    results.append((name, its, res, dt))
+
+# TODO 2: Pretty-print comparison table
+for name, its, res, dt in results:
+    print(f"{name:10s} | iterations={its:4d} | residual={res:.2e} | time={dt*1e3:.1f} ms")
+
+# TODO 3 (stretch): loop over tolerances [1e-6, 1e-10] and observe iterations
+\end{lstlisting}
+\end{frame}
+
+ 
 \subsection{12) Stretch goal: SPMD and bsp1d backend}
 \begin{frame}{SPMD and bsp1d backend (stretch)}
 \begin{itemize}
