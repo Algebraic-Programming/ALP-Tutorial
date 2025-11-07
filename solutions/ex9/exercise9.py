@@ -9,11 +9,11 @@ Features:
 
 Usage:
   python solutions/ex9/exercise9.py [--n 64] [--density 1.0] [--tol 1e-8 1e-10]
-  clean test:
-  python3 -m venv .tmpvenv && . .tmpvenv/bin/activate && pip install -q alp-graphblas && python exercises/ex9/exercise9_starter.py &&  rm -rf .tmpvenv
 
 Requirements:
   pip install alp-graphblas
+  or from downloaded wheel/package
+  pip install --no-index --find-links "$WHEEL_DIR" alp_graphblas
 """
 
 from __future__ import annotations
