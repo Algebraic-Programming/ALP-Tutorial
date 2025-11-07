@@ -1159,7 +1159,7 @@ kcore_decomposition.hpp  norm.hpp
 % TODO: think about reordering the frames
 \begin{frame}[fragile]{SPMD Hello World with ALP/GraphBLAS}
 	Let's look at \texttt{spmd.cpp}:
-\begin{lstlisting}[style=cpp-rich, language=C++, basicstyle=\ttfamily\scriptsize]
+\begin{lstlisting}[style=cpp-rich, language=C++]
 #include<iostream>
 #include<graphblas.hpp>
 
@@ -1190,7 +1190,7 @@ $ grbcxx -b bsp1d spmd.cpp -o spmd_example
 $ grbrun -b bsp1d -n 2  ./spmd_example
 \end{lstlisting}
 So the output will be something like this:
-	\begin{lstlisting}[basicstyle=\ttfamily\scriptsize]
+	\begin{lstlisting}[style=terminal,language=bash]
 Starting... 
 Info: grb::init (BSP1D) called using 4 user processes.
 Info: grb::init (reference) called.
@@ -1209,13 +1209,15 @@ Finishing: data_out is 69
 
 \begin{frame}[fragile]{What GraphBLAS offers: SPMD APIs}
 	\begin{itemize}
-		\item SPMD namespace utilities:
-\begin{lstlisting}[style=cpp-rich, language=C++, basicstyle=\ttfamily\scriptsize]
+		\item \textbf{SPMD namespace utilities} \\
+\begin{lstlisting}[style=cpp-rich, language=C++]
 size_t s = spmd<>::pid(); 		// get my process number
 size_t np = spmd<>::nprocs();	// get the total number of processes
 \end{lstlisting}
-		\item Collective functions:
-\begin{lstlisting}[style=cpp-rich, language=C++, basicstyle=\ttfamily\scriptsize]
+	\vfill
+\item \textbf{Collective functions} \\
+	They offer optimized routines to do common tasks that need the \em collective \em effort of all the processes.
+\begin{lstlisting}[style=cpp-rich, language=C++]
 // sum over all the values of num in the different processes. The result is available only in process 1
 grb::collectives<>::reduce( num, 1, grb::operators::add );
 // same as above but the result is available to every process
@@ -1223,6 +1225,7 @@ grb::collectives<>::allreduce( num, grb::operators::add );
 // set x to the value it has in process 7
 grb::collectives<>::broadcast( x, 7 );
 \end{lstlisting}
+
 And more to come...
 	\end{itemize}
 % Owner: GG
@@ -1230,10 +1233,71 @@ And more to come...
 
 
 \begin{frame}{Simulated Annealing-Replica Exchange}
+	\begin{itemize}
+		\item \textbf{Simulated Annealing}: make small random changes to the state and keep those that improve the solution.
+		\item \textbf{Replica Exchange} (also Parallel Tempering): exchange (partial) solutions at different temperatures.
+			\vspace{0.5cm}
 
+		\item Typical settings:
+		\begin{itemize}
+			\item Quadratic Unconstrained Binary Optimization (QUBO):
+				\[ E(x) = x^TQx \qquad x\in\{0,1\}^d,\quad Q\in\mathbb{R}^{d\times d} \]
+			\item Ising models' Hamiltonian function:
+				\[ E(x) = x^T(Jx+h) \qquad x\in\{-1,1\}^d,\quad J\in\mathbb{R}^{d \times d}, h\in\mathbb{R}^{d} \]
+		\end{itemize}
+	\end{itemize}
 % Owner: GG
 \end{frame}
 
+\begin{frame}[fragile]{Simulated Annealing-Replica Exchange ALP/GraphBLAS API}
+	\begin{itemize}
+		\item You can call directly the optimization function:
+\begin{lstlisting}[style=cpp-rich, language=C++]
+grb::RC simulated_annealing_RE(
+				const SweepFuncType &sweep,
+				SweepDataType& sweep_data,
+				std::vector< grb::Vector< StateType, backend > > &states,
+				grb::Vector< EnergyType, backend > &energies,
+				grb::Vector< TempType, backend > &betas,
+				std::vector< grb::Vector< StateType, backend > >  &temp_states,
+				grb::Vector< EnergyType, backend > &temp_energies,
+				const size_t &n_sweeps,
+				const bool &use_pt = false
+				)
+\end{lstlisting}
+
+	\end{itemize}
+% Owner: GG
+\end{frame}
+
+\begin{frame}[fragile]{Simulated Annealing-Replica Exchange ALP/GraphBLAS API}
+	\begin{itemize}
+\item ...or the simpler built-in QUBO/Ising optimizers:
+\begin{lstlisting}[style=cpp-rich, language=C++]
+grb::RC simulated_annealing_RE_QUBO(
+				const grb::Matrix< QType, backend, RSI, CSI, NZI > &Q,
+				std::vector< grb::Vector< StateType, backend > > &states,
+				grb::Vector< EnergyType, backend > &energies,
+				grb::Vector< TempType, backend > &betas,
+				const size_t &n_sweeps = 1,
+				const bool &use_pt = false
+				)
+\end{lstlisting}
+
+\begin{lstlisting}[style=cpp-rich, language=C++]
+grb::RC simulated_annealing_RE_Ising(
+				const grb::Matrix< QType, backend, RSI, CSI, NZI > &couplings,
+				const grb::Vector< QType, backend > &local_fields,
+				std::vector< grb::Vector< StateType, backend > > &states,
+				grb::Vector< EnergyType, backend > &energies,
+				grb::Vector< TempType, backend > &betas,
+				const size_t &n_sweeps = 1,
+				const bool &use_pt = false
+				)
+\end{lstlisting}
+	\end{itemize}
+% Owner: GG
+\end{frame}
 % =========================
 % Wednesday 12 Nov
 % =========================
