@@ -703,7 +703,37 @@ const grb::Matrix< double > identity =
 \end{frame}
 
 \subsection{3) Introduction to core primitives (3.4)}
-\begin{frame}{Primitives overview (3.4)}
+
+\begin{frame}[fragile]
+\frametitle{Primitives overview (3.4)}
+Element-wise addition, $z=x+y$:
+$$
+	\left(\begin{tabular}{c}0\\0\\1\\0\\0\end{tabular}\right) +
+	\left(\begin{tabular}{c}1\\0\\0\\0\\1\end{tabular}\right) =
+	\left(\begin{tabular}{c}1\\0\\1\\0\\1\end{tabular}\right).
+$$
+ALP/GraphBLAS:
+\begin{itemize}
+	\item \texttt{grb::eWiseAdd( z, x, y, plusTimes );}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Primitives overview (3.4)}
+Element-wise multiplication, $z=x\odoty$:
+$$
+	\left(\begin{tabular}{c}0\\0\\1\\0\\0\end{tabular}\right) \odot
+	\left(\begin{tabular}{c}1\\0\\0\\0\\1\end{tabular}\right) =
+	\left(\begin{tabular}{c}0\\0\\0\\0\\0\end{tabular}\right).
+$$
+ALP/GraphBLAS:
+\begin{itemize}
+	\item \texttt{grb::eWiseMul( z, x, y, plusTimes );}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Primitives overview (3.4)}
 \begin{itemize}
     \item Level-1: foldl/foldr, dot, eWiseAdd/Mul
     \item Level-2: mxv, vxm
