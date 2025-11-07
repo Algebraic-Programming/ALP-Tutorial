@@ -1181,9 +1181,33 @@ kcore_decomposition.hpp  norm.hpp
 % Owner: GG
 \end{frame}
 
-% TODO: think about reordering the frames
 \begin{frame}[fragile]{SPMD Hello World with ALP/GraphBLAS}
-	Let's look at \texttt{spmd.cpp}:
+
+We compile and run the example as follows:
+\begin{lstlisting}[style=terminal, language=bash]
+$ grbcxx -b bsp1d spmd.cpp -o spmd_example
+$ grbrun -b bsp1d -n 2  ./spmd_example
+\end{lstlisting}
+So the output will be something like this:
+	\begin{lstlisting}[style=terminal,language=bash]
+Starting... 
+Info: grb::init (BSP1D) called using 4 user processes.
+Info: grb::init (reference) called.
+Info: grb::init (reference) called.
+Hello from process 0
+Info: grb::finalize (bsp1d) called.
+	 process 0 is finalisingHello from process 1
+
+	 process 1 is finalising
+Info: grb::finalize (reference) called.
+Info: grb::finalize (reference) called.
+Finishing: data_out is 69
+\end{lstlisting}
+% Owner: GG
+\end{frame}
+
+\begin{frame}[fragile]{SPMD Hello World with ALP/GraphBLAS}
+	Now let's look at \texttt{spmd.cpp}:
 \begin{lstlisting}[style=cpp-rich, language=C++]
 #include<iostream>
 #include<graphblas.hpp>
@@ -1207,32 +1231,7 @@ int main ( int argc , char ** argv ) {
 % Owner: GG
 \end{frame}
 
-\begin{frame}[fragile]{SPMD Hello World with ALP/GraphBLAS}
-
-We compile and run it as follows:
-\begin{lstlisting}[style=terminal, language=bash]
-$ grbcxx -b bsp1d spmd.cpp -o spmd_example
-$ grbrun -b bsp1d -n 2  ./spmd_example
-\end{lstlisting}
-So the output will be something like this:
-	\begin{lstlisting}[style=terminal,language=bash]
-Starting... 
-Info: grb::init (BSP1D) called using 4 user processes.
-Info: grb::init (reference) called.
-Info: grb::init (reference) called.
-Hello from process 0
-Info: grb::finalize (bsp1d) called.
-	 process 0 is finalisingHello from process 1
-
-	 process 1 is finalising
-Info: grb::finalize (reference) called.
-Info: grb::finalize (reference) called.
-Finishing: data_out is 69
-\end{lstlisting}
-% Owner: GG
-\end{frame}
-
-\begin{frame}[fragile]{What GraphBLAS offers: SPMD APIs}
+\begin{frame}[fragile]{What ALP/GraphBLAS offers: SPMD APIs}
 	\begin{itemize}
 		\item \textbf{SPMD namespace utilities} \\
 \begin{lstlisting}[style=cpp-rich, language=C++]
@@ -1241,7 +1240,7 @@ size_t np = spmd<>::nprocs();	// get the total number of processes
 \end{lstlisting}
 	\vfill
 \item \textbf{Collective functions} \\
-	They offer optimized routines to do common tasks that need the \em collective \em effort of all the processes.
+	Optimized routines to do common tasks that need the \em collective \em effort of all the processes.
 \begin{lstlisting}[style=cpp-rich, language=C++]
 // sum over all the values of num in the different processes. The result is available only in process 1
 grb::collectives<>::reduce( num, 1, grb::operators::add );
@@ -1256,25 +1255,56 @@ And more to come...
 % Owner: GG
 \end{frame}
 
-
-\begin{frame}{Simulated Annealing-Replica Exchange}
+\begin{frame}{Simulated Annealing - Replica Exchange}
+	Typical problems approached with Replica Exchange are:
 	\begin{itemize}
-		\item \textbf{Simulated Annealing}: make small random changes to the state and keep those that improve the solution.
-		\item \textbf{Replica Exchange} (also Parallel Tempering): exchange (partial) solutions at different temperatures.
-			\vspace{0.5cm}
-
-		\item Typical settings:
-		\begin{itemize}
-			\item Quadratic Unconstrained Binary Optimization (QUBO):
-				\[ E(x) = x^TQx \qquad x\in\{0,1\}^d,\quad Q\in\mathbb{R}^{d\times d} \]
-			\item Ising models' Hamiltonian function:
-				\[ E(x) = x^T(Jx+h) \qquad x\in\{-1,1\}^d,\quad J\in\mathbb{R}^{d \times d}, h\in\mathbb{R}^{d} \]
-		\end{itemize}
+		\item \textbf{Quadratic Unconstrained Binary Optimization (QUBO)}:
+			\[ \text{minimize } E(x) = x^TQx \qquad x\in\{0,1\}^d,\quad Q\in\mathbb{R}^{d\times d} \]
+		\item \textbf{Ising models' Hamiltonian function}:
+			\[ \text{minimize } E(x) = x^T(Jx+h) \qquad x\in\{-1,1\}^d,\quad J\in\mathbb{R}^{d \times d}, h\in\mathbb{R}^{d} \]
+		\item But Simulated Annealing has been used to approximate solutions to \textit{Traveling Salesman Problem} and other hard problems!
+			% The sky is the limit!
 	\end{itemize}
 % Owner: GG
 \end{frame}
 
-\begin{frame}[fragile]{Simulated Annealing-Replica Exchange ALP/GraphBLAS API}
+\begin{frame}{Simulated Annealing - Replica Exchange}
+	The algorithm proceeds in two alternating steps, that are repeated multiple times:
+	\begin{enumerate}
+		\item \textbf{Simulated Annealing}:
+
+			make small \textbf{random changes} to the state and always keep those that improve the solution,
+			but
+			\textbf{also accept bad updates} with some probability, depending on the temperature: \\
+			States at high temperature likely accept changes.
+			
+			\vspace{0.5cm}
+
+		\item \textbf{Replica Exchange}:
+
+			exchange (partial) solutions at different temperatures so that we have:
+		\begin{itemize}
+			\item \textbf{Good states at low temperature}, to be finely optimized locally
+			\item \textbf{Bad states at high temperature}, and thus explore the whole state space
+		\end{itemize}
+			This step is optional, but can improve the results.
+	\end{enumerate}
+	\small This algorithm is also known as \textit{Parallel Tempering}.
+% Owner: GG
+\end{frame}
+
+
+\begin{frame}[fragile]{Simulated Annealing - Replica Exchange ALP/GraphBLAS API}
+	What makes this implementation \textbf{fast and scalable}?
+	\begin{itemize}
+		\item GraphBLAS all the way down. 
+		\item \textbf{Distributed Replica Exchange}: SA independently on each replica, then mix and combine the results \\ 
+			\small As the work on each replica is the same, that is an embarassingly parallel job followed by careful communication. 
+	\end{itemize}
+% Owner: GG
+\end{frame}
+
+\begin{frame}[fragile]{Simulated Annealing - Replica Exchange ALP/GraphBLAS API}
 	\begin{itemize}
 		\item You can call directly the optimization function:
 \begin{lstlisting}[style=cpp-rich, language=C++]
@@ -1290,14 +1320,16 @@ grb::RC simulated_annealing_RE(
 				const bool &use_pt = false
 				)
 \end{lstlisting}
+			\small \textbf{But you need to define} the \texttt{sweep} function that changes the state and returns the relative change in the energy \\
+			This is flexible, but possibly tedious
 
 	\end{itemize}
 % Owner: GG
 \end{frame}
 
-\begin{frame}[fragile]{Simulated Annealing-Replica Exchange ALP/GraphBLAS API}
+\begin{frame}[fragile]{Simulated Annealing - Replica Exchange ALP/GraphBLAS API}
 	\begin{itemize}
-\item ...or the simpler built-in QUBO/Ising optimizers:
+\item For common problems are also the simpler built-in QUBO/Ising optimizers:
 \begin{lstlisting}[style=cpp-rich, language=C++]
 grb::RC simulated_annealing_RE_QUBO(
 				const grb::Matrix< QType, backend, RSI, CSI, NZI > &Q,
@@ -1320,9 +1352,68 @@ grb::RC simulated_annealing_RE_Ising(
 				const bool &use_pt = false
 				)
 \end{lstlisting}
+\item But these give away some control (and thus may leave performance on the table)...
 	\end{itemize}
 % Owner: GG
 \end{frame}
+
+\begin{frame}[fragile]{Simulated Annealing-Replica Exchange Example workflow}
+	\begin{itemize}
+		\item Example usage to (approximately) optimize an Ising problem:
+\begin{lstlisting}[style=cpp-rich, language=C++]
+const size_t n = 420; // size of the problem
+grb::Matrix< double > J; // in this example we omit filling J with values
+grb::Vector< double > h ( n ), energies ( n ), betas ( n ); 
+std::vector< grb::Vector< float > > states;
+const size_t n_sweeps = 69; // number of repetitions
+const bool use_pt = true;
+
+grb::set( h, 1.0 );
+grb::set( betas, 3.0 );
+for(size_t i = 0 ; i < n_replicas ; ++i ){
+	grb::Vector< double > v (n);	// create a state v, you should (randomly) initialize them
+	states.emplace_back( v );
+	grb::setElement( energies, energy(state[i]), i ); // don't forget to set initial energies!
+}
+grb::RC rc = grb::algorithms::simulated_annealing_RE_Ising(
+	J, h, states, energies, betas, n_sweeps, use_pt
+);
+// Now states and energies are optimized!
+auto best_state = states[0];
+auto best_energy = energy[0];
+\end{lstlisting}
+	\end{itemize}
+% Owner: GG
+\end{frame}
+
+\begin{frame}[fragile]{Simulated Annealing-Replica Exchange Example workflow}
+	\begin{itemize}
+		\item If you have a custom problem you can define your sweep function as follows
+\begin{lstlisting}[style=cpp-rich, language=C++]
+auto sweep_fun = [](
+	grb::Vector< uint8_t > &state,
+	float &beta,
+	std::tuple<
+		const int&,
+		grb::Vector< uint8_t >&, // or whatever else you need
+		std::minstd_rand& // you can also pass a random number generator
+	> &data){
+	uint8_t delta_E = 0; 
+	const auto n = std::get<0>(data);
+	// Do what you need to do...
+	return delta_E; // return the change in energy
+};
+// note that the type of sweep_data must be equal to the tuple above
+auto sweep_data = std::tie( n, v, rng );
+
+grb::RC rc = grb::algorithms::simulated_annealing_RE(
+	sweep_fun, sweep_data, states, energies, betas, temp_states, temp_energies, n_sweeps, use_pt
+);
+\end{lstlisting}
+	\end{itemize}
+% Owner: GG
+\end{frame}
+
 % =========================
 % Wednesday 12 Nov
 % =========================
