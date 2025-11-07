@@ -1413,30 +1413,118 @@ Levels $l = 0..d$ with throughput vector
 \begin{frame}{HIPO Modeling}
 \framesubtitle{k-Multi-BSP: Algorithm parameters and cost}
 \begin{itemize}
-\item Supersteps $i = 0..n$ with participants $s = 0..p(l)$
+\item Supersteps $i = 0..n$ with participating sub-components $s = 0..p(l)$
 \item Work vectors at the leaf level: $w_v(i,s,l=0) = (w_{\text{scalar}}, w_{\text{vec\_SIMD}})$
-\item Stream descriptors $ks(i,s,l)$ for disjoint memory regions (0..$kmax(l)$)
-\item Traffic descriptors $t(i,s,l,k)$, $v(i,s,l,k)$ for bytes sent/received
+\item Stream descriptors $ks(i,s,l)$ accessing (0..$kmax(l)$) different memory regions 
+\item Communication volume $t(i,s,l,k)$, $v(i,s,l,k)$ for bytes sent/received
 \end{itemize}
 \vspace{0.5em}
 \begin{columns}[t]
-\column{0.48\textwidth}
-\textbf{Per-superstep computation cost}\\[0.2em]
+\column{0.5\textwidth}
+\textbf{Computation cost (per-superstep)}
 \[
-    c_{\text{comp}} = \max\left( \frac{r_{\text{scalar}}}{w_{\text{scalar}}}, \frac{w_{\text{vec\_SIMD}}}{ops_{\text{SIMD}}} \right)
+c_{\text{comp}} = \max\left( \frac{r_{\text{scalar}}}{w_{\text{scalar}}}, \frac{w_{\text{vec\_SIMD}}}{ops_{\text{SIMD}}} \right)
 \]
-\column{0.48\textwidth}
-\textbf{Per-level communication cost}\\[0.2em]
+\column{0.5\textwidth}
+\textbf{Communication cost (per-level)}
 \[
-    c_{\text{comm}}(i,l) = \max_{s,k} h(i,s,l,k) \cdot g(l) + ls(l)
+c_{\text{comm}}(i,l) = \max_{s,k} h(i,s,l,k) \cdot g(l) + ls(l)
 \]
 \end{columns}
+\vspace{0.5em}
 \textbf{Total cost aggregation}
 \[
-    T = \sum_{l=0}^{d} f\Big( \sum_{i=0}^{n} c_{\text{comm}}(i,l),\, c_{\text{comp}} \Big), \quad f \in \{\max, +\}
+T = \sum_{l=0}^{d} f\Big( \sum_{i=0}^{n} c_{\text{comm}}(i,l),\, c_{\text{comp}} \Big), \quad f \in \{\max, +\}
 \]
-\textbf{Simplified memory-bound variant}: assume uniform per process, drop $r_v$, $w_v$, $s$; cost reduces to $T = \sum_{i,l,k} c_{\text{comm}}(i,l)$ with $6d+1$ HW params and $1 + n d (ks+1)$ algo params.
+\textbf{Simplified memory-bound variant}: Assume uniform per process (no $s$), drop $r_v$, $w_v$.
+\begin{itemize}
+  \item $T = \sum_{i,l,k} c_{\text{comm}}(i,l)$ $\rightarrow$ $6d+1$ HW parameters, $1 + n d (ks+1)$ algo parameters.
+\end{itemize}
 % Owner: PA
+\end{frame}
+
+\begin{frame}{HIPO Modeling}
+\framesubtitle{k-Multi-BSP: Visuals — Cascade roofline}
+\centering
+\includegraphics[width=0.9\linewidth]{Images/Multi_BSP_submodel_roofline_cascade.png}
+\vspace{0.5em}
+\begin{itemize}
+  \item Cascade system: multi-level bandwidth/latency staircase captured by the k-Multi-BSP roofline submodel.
+  \item Highlights how stream-aware hierarchy bounds throughput per level.
+  \item Useful for contrasting theoretical limits with solver footprints.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{HIPO Modeling}
+\framesubtitle{k-Multi-BSP: Visuals — ARM920 roofline}
+\centering
+\includegraphics[width=0.9\linewidth]{Images/Multi_BSP_submodel_roofline_arm920.png}
+\vspace{0.5em}
+\begin{itemize}
+  \item ARM920 embedded target: emphasises tight memory bandwidth and latency ceilings.
+  \item Shows the same model adapting to radically different hardware tiers.
+  \item Guides which levels dominate (cache vs. off-chip) when mapping solvers.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{HIPO Modeling}
+\framesubtitle{ARM920 hardware profile}
+\centering
+\includegraphics[width=0.85\linewidth]{Images/ARM920_hw_models.png}
+\vspace{0.5em}
+\begin{itemize}
+  \item Hardware parameters extracted for ARM920: $g(l)$, $ls(l)$, $m(l)$ per tier.
+  \item Serves as direct input to k-Multi-BSP calibrations for embedded deployments.
+  \item Reinforces the need for generic parameterisation (same model, different platform).
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Solver Footprints}
+\framesubtitle{Iteration performance — synthetic, 1 thread}
+\centering
+\includegraphics[width=0.9\linewidth]{Images/Solver_iteration_performance_1t_synthetic.png}
+\vspace{0.5em}
+\begin{itemize}
+  \item Baseline single-thread synthetic workload vs. predicted cost.
+  \item Validates model accuracy at the lowest parallelism setting.
+  \item Helps identify memory-bound stages before scaling out.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Solver Footprints}
+\framesubtitle{Iteration performance — real data, 1 thread}
+\centering
+\includegraphics[width=0.9\linewidth]{Images/Solver_iteration_performance_1t_real.png}
+\vspace{0.5em}
+\begin{itemize}
+  \item Real-world dataset, 1-thread run: contrasts synthetic vs. observed behaviour.
+  \item Highlights irregular access penalties captured via $k$-streams.
+  \item Provides anchor for tuning cache-level parameters.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Solver Footprints}
+\framesubtitle{Iteration performance — synthetic, 96 threads}
+\centering
+\includegraphics[width=0.9\linewidth]{Images/Solver_iteration_performance_96t_synthetic.png}
+\vspace{0.5em}
+\begin{itemize}
+  \item High-concurrency synthetic workload: stresses inter-level bandwidth $g(l)$.
+  \item Reveals when NUMA crossings dominate vs. intra-socket execution.
+  \item Useful for validating stream-capacity ($k_{max}$) assumptions.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Solver Footprints}
+\framesubtitle{Iteration performance — real data, 96 threads}
+\centering
+\includegraphics[width=0.9\linewidth]{Images/Solver_iteration_performance_96t_real.png}
+\vspace{0.5em}
+\begin{itemize}
+  \item Production dataset under heavy parallelism: exposes communication hotspots.
+  \item Demonstrates the need for translation layer (NUMA-aware mapping).
+  \item Informs scheduling heuristics for ALP backends.
+\end{itemize}
 \end{frame}
 
 \subsection{14) SPMD execution, Replica exchange}
@@ -1720,6 +1808,118 @@ grb::RC rc = grb::algorithms::simulated_annealing_RE(
     \item Open problems and roadmap
 \end{itemize}
 % Owner: DJ
+\end{frame}
+
+\begin{frame}{HIPO Modeling}
+\framesubtitle{ARM920 topology (hwloc snapshot)}
+\centering
+\includegraphics[width=0.95\linewidth]{Images/ARM920_system.png}
+\vspace{0.5em}
+\begin{itemize}
+  \item Dual-package, four NUMA domains; each socket exposes 24 MiB shared L3 and per-core L2/L1.
+  \item 96 PU threads (48 cores) mapped across NUMA domains — key for choosing $p(l)$ values in the model.
+  \item Provides the structural blueprint for the $k$-Multi-BSP hierarchy (levels = socket, NUMA, core).
+\end{itemize}
+\end{frame}
+
+\begin{frame}{HIPO Modeling}
+\framesubtitle{Automated calibration for $g(l)$ and $ls(l)$}
+\begin{itemize}
+  \item We run the Huawei microbenchmark suite (see \textit{Huawei-Zurich\_MBSP\_08-2025-2.pdf}) across cache, NUMA and memory tiers.
+  \item Pointer-chasing and streaming kernels sweep working-set sizes; regression extracts bandwidth $g(l)$ and latency $ls(l)$ per level.
+  \item Benchmarks repeat per thread placement (single core, NUMA-local, cross-socket) to capture $k_{max}(l)$ effects.
+  \item Output feeds directly into the k-Multi-BSP hardware parameter tables for subsequent solver predictions.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{HIPO Modeling}
+\framesubtitle{Hardware profiles from microbenchmarks}
+\centering
+\includegraphics[width=0.9\linewidth]{Images/ARM920_hw_models.png}
+\vspace{0.5em}
+\begin{itemize}
+  \item Resulting $m(l)$, $g(l)$, $ls(l)$ profiles for ARM920 vs. Cascade (dashed) after automated calibration.
+  \item Highlights contrasting bandwidth hierarchies: embedded (steep drop after L2) vs. server-grade (broader L3/NUMA plateau).
+  \item These tables plug into the model to predict solver behaviour per platform or guide HW/SW co-design choices.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Solver iteration (1 thread)}
+\framesubtitle{Synthetic vs. real workloads}
+\centering
+\begin{minipage}{0.48\linewidth}
+  \includegraphics[width=\linewidth]{Images/Solver_iteration_performance_1t_synthetic.png}
+\end{minipage}
+\hfill
+\begin{minipage}{0.48\linewidth}
+  \includegraphics[width=\linewidth]{Images/Solver_iteration_performance_1t_real.png}
+\end{minipage}
+\vspace{0.5em}
+\begin{itemize}
+  \item Both curves align with model-predicted $c_{\text{comp}}$/$c_{\text{comm}}$ crossover points around L2/L3 capacities.
+  \item Real data shows irregular-access penalties; synthetic benchmark stays closer to streaming roofline.
+  \item Provides single-thread baselines for later autotuning.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Solver iteration (96 threads)}
+\framesubtitle{Synthetic vs. real workloads}
+\centering
+\begin{minipage}{0.48\linewidth}
+  \includegraphics[width=\linewidth]{Images/Solver_iteration_performance_96t_synthetic.png}
+\end{minipage}
+\hfill
+\begin{minipage}{0.48\linewidth}
+  \includegraphics[width=\linewidth]{Images/Solver_iteration_performance_96t_real.png}
+\end{minipage}
+\vspace{0.5em}
+\begin{itemize}
+  \item Model-guided thread selection (red) tracks best observed configuration within a few percent despite simplicity.
+  \item NUMA-aware $k$-stream modelling captures bandwidth cliffs when working set spills past NUMA-local memory.
+  \item Informs backend scheduling and thread binding decisions.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Comparing systems with rooflines}
+\framesubtitle{Cascade vs. ARM920}
+\centering
+\begin{minipage}{0.48\linewidth}
+  \includegraphics[width=\linewidth]{Images/Multi_BSP_submodel_roofline_cascade.png}
+\end{minipage}
+\hfill
+\begin{minipage}{0.48\linewidth}
+  \includegraphics[width=\linewidth]{Images/Multi_BSP_submodel_roofline_arm920.png}
+\end{minipage}
+\vspace{0.5em}
+\begin{itemize}
+  \item Same k-Multi-BSP formulation, different hardware: server cascade offers broader bandwidth plateau; ARM920 shows sharper drop-offs.
+  \item Enables problem-specific system selection: choose the platform whose roofline envelopes the solver's footprint.
+  \item Supports rapid "what-if" analyses during HW/SW co-design.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Autotuning outlook}
+\framesubtitle{Thread selection — synthetic workload}
+\centering
+\includegraphics[width=0.9\linewidth]{Images/Solver_iteration_close_synthetic_performance_ARM920.png}
+\vspace{0.5em}
+\begin{itemize}
+  \item Close-up of model vs. ground truth: predicted best thread count nearly matches exhaustive search.
+  \item Demonstrates the value of simple cost aggregation for automated tuning.
+  \item Basis for integrating model-guided heuristics into ALP backends.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Autotuning outlook}
+\framesubtitle{Thread selection — real workload}
+\centering
+\includegraphics[width=0.9\linewidth]{Images/Solver_iteration_close_real_performance_ARM920.png}
+\vspace{0.5em}
+\begin{itemize}
+  \item Real dataset exhibits noisier plateaus, yet model still narrows optimal thread range effectively.
+  \item Suggests practical deployment: cheap exploration guided by k-Multi-BSP parameters.
+  \item Next steps: integrate adaptive refinement (update $k_{max}(l)$, $g(l)$) from runtime telemetry.
+\end{itemize}
 \end{frame}
 
 \end{document}
