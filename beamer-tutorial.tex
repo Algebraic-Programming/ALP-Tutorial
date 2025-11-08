@@ -714,7 +714,17 @@ $$
 $$
 ALP/GraphBLAS:
 \begin{itemize}
-	\item \texttt{grb::eWiseAdd( z, x, y, plusTimes );}
+	\item {\color{gray}\texttt{grb::Vector< double > x( n ), y( n ), z( n );}}
+	\begin{itemize}
+		\item {\color{gray}(as discussed before)}
+	\end{itemize}
+	\item {\color{gray}...}
+	\item {\color{gray}\texttt{grb::semirings::plusTimes< double > plusTimes;}}
+	\begin{itemize}
+		\item {\color{gray}(will be detailed tomorrow)}
+	\end{itemize}
+	\item \texttt{grb::clear( z ); // makes sure z is empty}
+	\item \texttt{grb::eWiseAdd( z, x, y, plusTimes ); // z = x + y}
 \end{itemize}
 \end{frame}
 
@@ -728,16 +738,112 @@ $$
 $$
 ALP/GraphBLAS:
 \begin{itemize}
-	\item \texttt{grb::eWiseMul( z, x, y, plusTimes );}
+	\item {\color{gray}...}
+	\item \texttt{grb::RC rc = grb::clear( z ); // makes sure z is empty}
+	\item \texttt{rc = rc ? rc : grb::eWiseMul( z, x, y, plusTimes ); // z = x .* y}
+\end{itemize}
+Every primitive emits a \textbf{return code} (RC). Two fundamental ones are:
+\begin{itemize}
+	\item \texttt{grb::SUCCESS}: primitive executed OK;
+	\item \texttt{grb::PANIC}: something bad happened.
+\end{itemize}
+Always check return codes! (The above snippet contains a short-cut)
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Primitives overview (3.4)}
+Dot product, $\alpha=(x,y)$:
+$$
+	\alpha = \sum_i x_iy_i.
+$$
+ALP/GraphBLAS:
+\begin{itemize}
+	\item {\color{gray}...}
+	\item \texttt{double alpha = 0.0;}
+	\item \texttt{grb::RC rc = grb::dot( alpha, x, y, plusTimes );}
+\end{itemize}\vspace{\baselineskip}\pause
+What if I again execute a dot product:
+\begin{itemize}
+	\item \texttt{rc = rc ? rc : grb::dot( alpha, x, y, plusTimes );}
+\end{itemize}
+Does $\alpha$ now equal $\sum_i x_iy_i$, or ${\color{red}2}\sum_i x_iy_i$?
+\vspace{\baselineskip}\pause
+
+Answer: $2\sum_i x_iy_i$ -- dot, eWiseAdd, eWiseMul, ... \textbf{are in-place}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Primitives overview (3.4)}
+Most ALP primitives are in-place: helps achieve \textbf{high performance}
+$$
+x \odot y \to x
+$$
+ALP/GraphBLAS:
+\begin{itemize}
+	\item {\color{gray}...}
+	\item \texttt{auto times = plusTimes.getMultiplicativeOperator();}
+	\item \texttt{grb::RC rc = grb::foldl( x, y, times ); // x <- x .* y}
+\end{itemize}\vspace{\baselineskip}\pause
+
+We could also have folded in the other direction:
+\begin{itemize}
+	\item {\color{gray}...}
+	\item \texttt{grb::RC rc = grb::foldr( x, y, times ); // y <- x .* y}
 \end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{Primitives overview (3.4)}
+Similar to \texttt{grb::dot}, we may also fold into scalars:
+$$
+\beta = \sum_i x_i
+$$
+ALP/GraphBLAS:
+\begin{itemize}
+	\item {\color{gray}...}
+	\item \texttt{auto plus = plusTimes.getAdditiveMonoid();}
+	\item \texttt{double beta = 0.0;}
+	\item \texttt{grb::RC rc = grb::foldl( beta, x, plus );}
+\end{itemize}
+or
+\begin{itemize}
+	\item \texttt{grb::RC rc = grb::foldr( x, beta, plus );}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Primitives overview (3.4)}
+Higher-level primitives:
+$$
+\gamma=(xA)^TAy, C=AB
+$$
+ALP/GraphBLAS:
+\begin{itemize}
+	\item {\color{gray}...}
+	\item \texttt{double gamma = 0,0;}
+	\item \texttt{grb::RC rc = grb::mxv( u, A, y, plusTimes ); // u = Ay}
+	\item \texttt{rc = rc ? rc : grb::vxm<}\\
+		\texttt{    grb::descriptors::transpose\_matrix}\\
+		\texttt{>( v, x, A, plusTimes ); // v = xA'}
+	\item \texttt{rc = rc ? rc : dot( gamma, v, u, plusTimes );}
+	\item \texttt{rc = rc ? rc : mxm( C, A, B, plusTimes );}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Primitives overview (3.4)}
+In BLAS-terminology, we overviewed three levels of primitives:
 \begin{itemize}
     \item Level-1: foldl/foldr, dot, eWiseAdd/Mul
     \item Level-2: mxv, vxm
     \item Level-3: mxm
+\end{itemize}\vspace{\baselineskip}
+
+We also overviewed:
+\begin{itemize}
+	\item error handling: \texttt{grb::MISMATCH}, \texttt{grb::ILLEGAL};
+	\item GraphBLAS descriptors that alter semantics (transpose); and
+	\item ALP's default in-place behaviour of operations.
 \end{itemize}
 % Owner: AJ
 % Source (ALP_Tutorial.tex - Numerical Linear Algebra):
@@ -749,7 +855,7 @@ ALP/GraphBLAS:
 % \end{lstlisting}
 \end{frame}
 
-\subsection{4) numerical linear algebra}
+\subsection{4) Hands-on: numerical linear algebra}
 
 \begin{frame}[fragile]{Exercise 8}
 \begin{itemize}
