@@ -1,0 +1,45 @@
+# LaTeX intermediate files
+*.aux
+*.fdb_latexmk
+*.fls
+*.log
+*.nav
+*.out
+*.snm
+*.synctex.gz
+*.toc
+*.vrb
+
+# LaTeX build files
+*.bbl
+*.blg
+*.idx
+*.ilg
+*.ind
+*.lof
+*.lot
+*.glo
+*.gls
+*.glg
+*.acn
+*.acr
+*.alg
+*.bcf
+*.run.xml
+*.figlist
+*.makefile
+*.fls
+*.fdb_latexmk
+
+# LaTeX backup files
+*.bak
+*~
+
+# LaTeX editor files
+*.swp
+*.swo
+*~
+
+# PDF files (uncomment if you don't want to track compiled PDFs)
+*.pdf
+
