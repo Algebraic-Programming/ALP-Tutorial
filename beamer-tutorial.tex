@@ -1468,13 +1468,80 @@ for name, its, res, dt in results:
 \end{frame}
 
  
-\subsection{12) Stretch goal: SPMD and bsp1d backend}
-\begin{frame}{SPMD and bsp1d backend (stretch)}
+\subsection{12) Stretch goal: explicit SPMD control}
+
+\begin{frame}{Advanced ALP: explicit SPMD control}
+ALP can compile code to run programs fully hybrid-parallel:
 \begin{itemize}
-    \item Backend concepts
-    \item Launching distributed runs
+    \item hybrid shared- and distributed-memory execution, $2\times4$:
+	\begin{itemize}
+		\item \texttt{grbcxx -b hybrid myProgram.cpp}
+		\item \texttt{export OMP\_NUM\_THREADS=4}
+		\item \texttt{grbrun -b hybrid -np 2 ./a.out}
+	\end{itemize}
+    \item \textbf{fully transparent}: no parallelisation concepts in ALP
+\end{itemize}\vspace{\baselineskip}
+
+The hybrid backend is enabled through compilation with LPF:
+\begin{itemize}
+	\item \texttt{../boostrap.sh --prefix=</install/path> {\color{red}--with-lpf=/tmp/lpfinstall}}
 \end{itemize}
-% Owner: AJ  % TODO: install lpf
+% Owner: AJ
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Advanced ALP: explicit SPMD control}
+Nevertheless, sometimes explicit control is useful:
+\begin{itemize}
+	\item \texttt{grb::spmd<>::nprocs();} -- returns no.\ of processes
+	\item \texttt{grb::spmd<>::pid();} -- returns unique process ID
+\end{itemize}\vspace{\baselineskip}
+
+\textbf{Bonus exercise}: write a program that prints the following
+\begin{itemize}
+	\item \texttt{Hello world from process <i> / <p>}
+\end{itemize}
+where $i$ is the process ID and $p$ the total number of processes. There should be one such line for each process.\vspace{\baselineskip}
+
+\textbf{Hint: }first rebuild your ALP installation with LPF support (bootstrap with \verb|--with-lpf=/tmp/lpfinstall|). Don't forget to use the launcher!
+\end{frame}
+
+\begin{frame}{Advanced ALP: explicit SPMD control}
+By using SPMD, different processes may compute on different data. Results between processes must sometimes be exchanged to progress.\vspace{\baselineskip}
+
+\textbf{Collectives} are a standard mechanism for inter-process communication, which ALP also provides:
+\begin{itemize}
+	\item \texttt{alpha = 1.0;}
+	\item \texttt{grb::RC rc = grb::collectives<>::allreduce( alpha, plus );}
+\end{itemize}
+The above computes the sum of the value of alpha across each process in the SPMD section.\vspace{\baselineskip}
+
+\textbf{Question: }what is the value of alpha after the a successful call of the above?\pause\vspace{.5\baselineskip}
+
+\textbf{Answer: }$P=$\ \texttt{grb::spmd<>::nprocs;}\vspace{\baselineskip}\pause
+
+Near future: \textbf{RDMA support}.
+\end{frame}
+
+\begin{frame}{Advanced ALP: explicit SPMD control}
+If you want to explicit run a different ALP computation on different processes:
+\begin{itemize}
+	\item select the nonblocking backend for process-local computations
+	\begin{itemize}
+		\item \texttt{grb::Vector< double, grb::nonblocking > local\_x( n );}
+		\item \texttt{grb::Matrix< void, grb::nonblocking > local\_A( m, n );}
+		\item ...
+		\item \texttt{grbcxx {\color{red}-b hybrid} myProgram.cpp}
+	\end{itemize}\pause
+	\item ALP will compile-time dispatch to the right backend
+	\begin{itemize}
+		\item \texttt{grb::Vector< double > global\_x;}
+		\item \texttt{grb::set( global\_x, 3.14 ); // will use all processes}
+		\item \texttt{grb::set( local\_x, grb::spmd<>::pid() ); // uses SPMD}
+	\end{itemize}
+\end{itemize}\vspace{\baselineskip}\pause
+
+\textbf{Important: }these functionalities are here if you absolutely need them -- if, on the other hand, ALP can auto-parallelise your computation of interest, then {\color{red} none of these constructs are needed}. SPMD programming is harder than sequential programming!
 \end{frame}
 
 % =========================
