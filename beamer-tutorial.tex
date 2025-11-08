@@ -860,7 +860,7 @@ We also overviewed:
 \begin{frame}[fragile]{Exercise 8}
 \begin{itemize}
   \item Build small $A$ and $x$
-  \item Compute $y = A x$, $z = x \odot y$, $d = x^{\top} x$
+  \item Compute $y = A x$, $z = x \odot y$, $\delta = x^{\top} x$
   \item Print results
 \end{itemize}
 % Owner: DJ
@@ -943,7 +943,7 @@ static const double Avalues[6] = { 1.0, 2.0, 3.0, 4.0, 5.0, 6.0 };
 int main( int argc, char **argv ) {
     (void)argc;
     (void)argv;
-    std::printf("example (ALP/GraphBLAS) corrected API usage\n\n");
+    std::printf("example (ALP/GraphBLAS) API usage\n\n");
 
     // 1) Create a 3x3 sparse matrix A
     std::printf("Step 1: Constructing a 3x3 sparse matrix A.\n");
@@ -982,7 +982,22 @@ int main( int argc, char **argv ) {
     return EXIT_SUCCESS;
 }
 \end{lstlisting}
+\end{frame}
 
+\begin{frame}[fragile]{Exercise 8: Solutions}
+Answers:
+\begin{itemize}
+	\item $x=(1,2,3)$
+	\item $y=(8,18,17)$
+	\item $z=(8,36,51)$
+	\item complexity is $\Omega(n)$
+	\item random-access buildVector complexity is $\mathcal{O}(n/T+T)$
+\end{itemize}\vspace{\baselineskip}
+
+Bonus, the following descriptor short-hands building $x$:
+\begin{itemize}
+	\item \texttt{grb::set< grb::descriptors::use\_index >( x, 0 );}
+\end{itemize}
 \end{frame}
 
 \subsection{5) Interoperability with existing code: transition paths \& Python}
