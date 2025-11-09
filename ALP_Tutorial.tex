@@ -330,8 +330,6 @@ The former three scalar/vector primitives are dubbed \emph{level 1}, the followi
     grb::RC rc = grb::clear( y );
     rc = rc ? rc : grb::mxv(y, A, x, plusTimes);
     \end{lstlisting}
-    Note: mxv could be further generalised and can infer the semiring from the types of the input containers. This would however limit the control exposed to the user.
-
 
 \noindent \textbf{Exercise 8.} Copy the older \texttt{alp\_hw.cpp} to start with this exercise. Modify it to perform the following steps:
 \begin{enumerate}
