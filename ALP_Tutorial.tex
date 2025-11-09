@@ -4,7 +4,7 @@
 This section explains how to install ALP on a Linux system and compile a simple example. To get started:
 
 \begin{enumerate}
-\item \textbf{Install prerequisites}. Ensure you have a C++11 compatible compiler (e.g. \texttt{g++} 4.8.2 or later) with OpenMP support, CMake (>= 3.13) and GNU Make, plus development headers for libNUMA and POSIX threads. 
+\item \textbf{Install prerequisites}. Ensure you have a C++11 compatible compiler (e.g. \texttt{g++} 4.8.2 or later) with OpenMP support, CMake (>= 3.13) and GNU Make, plus development headers for libNUMA and POSIX threads.
 For example, on Debian/Ubuntu:
 \begin{verbatim}
 sudo apt-get install build-essential libnuma-dev libpthread-stubs0-dev cmake;
@@ -99,7 +99,7 @@ $ grbrun ./a.out
 Info: grb::init (reference) called.
 Hello from ./a.out
 Info: grb::finalize (reference) called.
-$ 
+$
 \end{lstlisting}
 
 \noindent \textbf{Exercise 1.} Double-check that you have the expected output from this example, as we will use its framework in the following exercises.
@@ -261,25 +261,25 @@ We have shown how matrices may be built from input iterators while similarly, ve
 
 \subsection{Numerical Linear Algebra}
 
-GraphBLAS, as the name implies, provides canonical BLAS-like functionalities on sparse matrices, sparse vectors, dense vectors and scalars. 
-These include \texttt{grb::foldl}, \texttt{grb::foldr}, \texttt{grb::dot}, \texttt{grb::eWiseAdd}, 
-\texttt{grb::eWiseMul}, \texttt{grb::eWiseLambda}, \texttt{grb::eWiseApply}, \texttt{grb::mxv}, 
-\texttt{grb::vxm}, and \texttt{grb::mxm}. 
+GraphBLAS, as the name implies, provides canonical BLAS-like functionalities on sparse matrices, sparse vectors, dense vectors and scalars.
+These include \texttt{grb::foldl}, \texttt{grb::foldr}, \texttt{grb::dot}, \texttt{grb::eWiseAdd},
+\texttt{grb::eWiseMul}, \texttt{grb::eWiseLambda}, \texttt{grb::eWiseApply}, \texttt{grb::mxv},
+\texttt{grb::vxm}, and \texttt{grb::mxm}.
 
 The loose analogy with BLAS is intentional, as these primitives cover the same ground as the Level 1, Level 2, and Level 3 BLAS operations.
 The former three scalar/vector primitives are dubbed \emph{level 1}, the following two matrix--vector primitives \emph{level 2}, and the latter matrix--matrix primitive \emph{level 3}. Their functionalities are summarised as follows:\newline
 
-    \textbf{grb::foldl, grb::foldr} – These primitives inplace operate on the input/output data structure by applying binary operator from the left or right, respectively. 
+    \textbf{grb::foldl, grb::foldr} – These primitives inplace operate on the input/output data structure by applying binary operator from the left or right, respectively.
     They require two data structures and two operators, the accumulation and binary operators oerators, typically taken from a semiring.
     For example, \texttt{grb::foldl( alpha, u, binary\_op, accum\_op )} computes $\alpha$\textit{=}$\alpha$ \textit{accum\_op} $(u_0$ \textit{binary\_op} $(u_1$ \textit{binary\_op} $(\ldots (u_{n-2}$ \textit{binary\_op} $u_{n-1})\ldots)))$, where $u$ is a vector of length $n$.\newline
 
     \textbf{grb::dot}%( grb::Vector<T> u, grb::Vector<T> v )}
 	– Compute the dot product of two vectors, $\alpha$\textit{+=}$u^Tv$ or $\alpha$\textit{+=}$\sum_i (u_i \times v_i)$, in essence combining element-wise multiplication with a reduction. The output $\alpha$ is a scalar, usually a primitive type such as \texttt{double}. Unlike the out-of-place \texttt{grb::set}, the \texttt{grb::dot} updates the output scalar in-place.\newline
 
-	\textbf{grb::eWiseMul, grb::eWiseAdd} - These primitives combine two containers element-by-element, the former using element-wise multiplication, and the latter using element-wise addition. Different from \texttt{grb::set}, 
-    these primitives are in-place, meaning the result of the element-wise operations are added to any elements already in the output container; i.e., \texttt{grb::eWiseMul} computes $z$\textit{+=}$x\odot y$, where $\odot$ denotes element-wise multiplication. 
+	\textbf{grb::eWiseMul, grb::eWiseAdd} - These primitives combine two containers element-by-element, the former using element-wise multiplication, and the latter using element-wise addition. Different from \texttt{grb::set},
+    these primitives are in-place, meaning the result of the element-wise operations are added to any elements already in the output container; i.e., \texttt{grb::eWiseMul} computes $z$\textit{+=}$x\odot y$, where $\odot$ denotes element-wise multiplication.
     In case of sparse vectors and an initially-empty output container, the primitives separate themselves in terms of the structure of the output vector, which is composed either of an intersection or union of the input structures.
-    Since \textbf{grb} primitives are unvaware of conventional multiplication and addition operations, they are provedied 
+    Since \textbf{grb} primitives are unvaware of conventional multiplication and addition operations, they are provided
     as correspond monoids from the semiring argument, the multiplicative and additive monoids.
 \begin{itemize}
   \item \textbf{intersection (eWiseMul):} The primitive will compute only an element-wise multiplication for those positions where \emph{both} input containers have entries. This is since any missing entries are assumed to have value zero, and are therefore ignored under multiplication.
@@ -287,43 +287,43 @@ The former three scalar/vector primitives are dubbed \emph{level 1}, the followi
   Note: The \texttt{grb} primitives do not assume conventional addition or multiplication. Instead, these operations are defined by the semiring argument, which specifies the additive and multiplicative monoids to use for the computation.
 \end{itemize}
 
-    \textbf{grb::eWiseLambda} - This primitive applies a user-defined function to each element of an input container, storing the result in an output container. 
-    Similar to \texttt{grb::set}, this primitive is out-of-place; i.e., the output container is potentially overwritten with the results of applying the function to each element of the input container. 
+    \textbf{grb::eWiseLambda} - This primitive applies a user-defined function to each element of an input container, storing the result in an output container.
+    Similar to \texttt{grb::set}, this primitive is out-of-place; i.e., the output container is potentially overwritten with the results of applying the function to each element of the input container.
     The user-defined function must be a callable object (e.g., a lambda function or a functor) that comes in two versions, one for vector and one for matrix arguments.
     For vector arguments, the function must take a single argument of the vector's value type and returns no value.
     For matrix arguments, the function must take three arguments: the row index, the column index, and the value type of the matrix; it also returns no value.
     The function is applied to each element of the input container and is expected to modify the output container.
     Note that in the nonblocking backend all containers modified by the lambda must be listed in the argument list, while only the first one generates the iterations over which the lambda is applied.\newline
 
-    \textbf{grb::eWiseApply} - This primitive applies a user-defined binary function to corresponding elements of two input containers, storing the result in an output container. 
+    \textbf{grb::eWiseApply} - This primitive applies a user-defined binary function to corresponding elements of two input containers, storing the result in an output container.
     It aims to handle all operators that do not fit into the semiring abstraction, such as minimum, maximum, logical AND, logical OR, etc.\newline
 
-    \textbf{grb::mxv}, \textbf{grb::vxm} - Performs right- and left-handed matrix--vector multiplication; i.e., $u$\textit{+=}$Av$ and $u$\textit{+=}$vA$, respectively. More precisely, e.g., \texttt{grb::mxv} computes the standard linear algebraic operation $u_i = u_i + \sum_j A_{ij} v_j$. 
-    Like almost all GraphBLAS primitives, the \texttt{grb::mxv} is an in-place operation. 
+    \textbf{grb::mxv}, \textbf{grb::vxm} - Performs right- and left-handed matrix--vector multiplication; i.e., $u$\textit{+=}$Av$ and $u$\textit{+=}$vA$, respectively. More precisely, e.g., \texttt{grb::mxv} computes the standard linear algebraic operation $u_i = u_i + \sum_j A_{ij} v_j$.
+    Like almost all GraphBLAS primitives, the \texttt{grb::mxv} is an in-place operation.
     If the intent is to compute $u=Av$ while $u$ is not empty, there are two solutions: 1) $u$ may cleared first (\texttt{grb::clear(u)}), or 2) $u$ may have all its values set to zero first (\texttt{grb::set(u, 0)}).\newline
 
     \textbf{grb::mxm} - Performs matrix--matrix multiplication; i.e., $C$\textit{+=}$AB$, or $C_{ij}=C_{ij}\textit{+=}\sum_{k}A_{ik}B_{kj}$. If, for a given $i,j$ the $i$th row of $A$ is empty or the $j$th column of $B$ is empty, no output will be appended to $C$-- that is, if $C_{ij}\notin C$, then after executing the primitive no such entry will have been added to $C$, meaning that the sparsity of $C$ is retained and the only fill-in to $C$ is due to non-zero contributions of $AB$. If in-place behaviour is not desired, $C$ must be cleared prior to calling this primitive\footnote{note that while setting $C$ to a dense matrix of all zeroes semantically also results in an out-of-place matrix--matrix multiplication, typically GraphBLAS applications should shy away from forming dense matrices due to their quadratic storage requirements}.\newline
 
-    \textbf{grb::set} - This primitive initializes values of a container (vector or matrix) to a specified scalar value or values from another container. 
+    \textbf{grb::set} - This primitive initializes values of a container (vector or matrix) to a specified scalar value or values from another container.
     It does not allocate nor free any dynamic memory, but simply sets values in the existing container.\newline
 
     The interface is more flexible that what is described above, since combinations of vectors and scalars and sometimes matrices
-    are supported in the single argument lists of the primitives. 
+    are supported in the single argument lists of the primitives.
     For example \texttt{grb::foldr} supports both vector-scalar and scalar-vector combinations.
-    With all the above operations, the same-type containers must have matching dimensions in the linear algebraic sense -- e.g., 
-    for $u=Av$, $u$ must have size equal to the number of rows in $A$ while $v$ must have size equal to the number of columns. 
-    If the sizes do not match, the related primitives will return \texttt{grb::MISMATCH}. 
-    Similarly, if for an output container the result cannot be stored due to insufficient capacity, 
-    \texttt{grb::ILLEGAL} will be returned. As with \texttt{grb::set}, 
-    furthermore, all above primitives may optionally take a mask as well as take a phase (resize or execute) 
+    With all the above operations, the same-type containers must have matching dimensions in the linear algebraic sense -- e.g.,
+    for $u=Av$, $u$ must have size equal to the number of rows in $A$ while $v$ must have size equal to the number of columns.
+    If the sizes do not match, the related primitives will return \texttt{grb::MISMATCH}.
+    Similarly, if for an output container the result cannot be stored due to insufficient capacity,
+    \texttt{grb::ILLEGAL} will be returned. As with \texttt{grb::set},
+    furthermore, all above primitives may optionally take a mask as well as take a phase (resize or execute)
     as its last argument.
 
-    There is one final caveat. In order to support graph algorithms, GraphBLAS provides on \emph{generalised} 
-    linear algebraic primitives -- not just numerical linear algebraic ones. 
-    This is explained further in the next subsection of this tutorial. 
-    To perform standard numerical linear algebra, the standard semirings are predefined in ALP/GraphBLAS. 
-    For instance, \texttt{grb::semirings::plusTimes< T >}, where $T$ is the domain over which we wish to perform numerical 
-    linear algebra (usually \texttt{double} or \texttt{std::complex< double >}). 
+    There is one final caveat. In order to support graph algorithms, GraphBLAS provides on \emph{generalised}
+    linear algebraic primitives -- not just numerical linear algebraic ones.
+    This is explained further in the next subsection of this tutorial.
+    To perform standard numerical linear algebra, the standard semirings are predefined in ALP/GraphBLAS.
+    For instance, \texttt{grb::semirings::plusTimes< T >}, where $T$ is the domain over which we wish to perform numerical
+    linear algebra (usually \texttt{double} or \texttt{std::complex< double >}).
     For example, to perform a sparse matrix--vector multiplication:
     \begin{lstlisting}
     auto plusTimes = grb::semirings::plusTimes< double >();
@@ -342,7 +342,7 @@ The former three scalar/vector primitives are dubbed \emph{level 1}, the followi
 \end{enumerate}
 One example $A, x$ could be:
 \[
-A = 
+A =
 \begin{bmatrix}
 0 & 1 & 2 \\
 0 & 3 & 4 \\
@@ -403,7 +403,7 @@ grb::is_monoid< grb::monoid::plus< T > >::value
 grb::is_commutative< grb::monoid::min< T > >::value
 // and so on
 \end{lstlisting}
-  
+
 %  \item \textbf{general monoids:} an operation with an identity element. Example:
 %  \begin{itemize}
 %    \item \texttt{($\times$, 1)} — standard multiplication:
@@ -598,7 +598,7 @@ int main( int argc, char **argv ) {
             return (int)rc;
         }
     }
-    
+
     //------------------------------
     // 7) Compute dot_val = xᵀ·x  (dot‐product under plus‐times semiring)
     //------------------------------
