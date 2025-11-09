@@ -1,0 +1,55 @@
+
+\section{Advanced ALP}
+
+This Section treats some more advanced ALP topics by which programmers can exercise tighter control over performance or semantics.
+
+\subsection{Performance Optimisation through Descriptors}
+
+We have previously seen that the semantics of primitives may be subtly changed by the use of descriptors: e.g., adding \texttt{grb::descriptors::transpose\_matrix} to \texttt{grb::mxv} has the primitive interpret the given matrix $A$ as its transpose ($A^T$) instead. Other descriptors, however, may also modify the performance semantics of a primitive. One example is the \texttt{grb::descriptors::dense} descriptor, which has two main effects when supplied to a primitive:
+\begin{enumerate}
+	\item all vector arguments to the primitive must be dense on primitive entry; and
+	\item any code paths that check sparsity or deal with sparsity are disabled.
+\end{enumerate}
+The latter effect directly affects performance, which is particularly evident for the \texttt{grb::nonblocking} backend. Another type of performance effect also caused by the latter is that produced binary code is smaller in size as well.\vspace{.5\baselineskip}
+
+\noindent \textbf{Exercise 12}: inspect the implementation of the PCG method in ALP. Run experiments using the \texttt{nonblocking} backend, comparing the performance of repeated linear solves with and without the dense descriptor. Also inspect the size of the binary. \textbf{Hint}: try \verb|make -j\$(nprocs) build_tests_category_performance| and see if an executable is produced in \texttt{tests/performance} that helps you complete this exercise faster.
+
+\subsection{Explicit SPMD}
+
+When compiling any ALP program with a distributed-memory backend such as \texttt{bsp1d} or \texttt{hybrid}, ALP automatically parallelises across multiple user processes. Most of the time this suffices, however, in some rare cases, the ALP programmer requires exercising explicit control over distributed-memory parallelism. Facilities for these exist across three components, in order of increasing control: \texttt{grb::spmd}, \texttt{grb::collectives}, %\texttt{grb::rdma}, 
+and \emph{explicit backend dispatching}.
+
+\subsubsection*{Basic SPMD}
+
+When selecting a distributed-memory backend, ALP automatically generates SPMD code without the user having to intervene. The \texttt{grb::spmd} class exposes these normally-hidden SPMD constructs to the programmer: 1) \texttt{grb::spmd<>::nprocs()} returns the number of user processes in the current ALP program, while 2) \texttt{grb::spmd<>::pid()} returns the unique ID of the current user process.
+
+\noindent \textbf{Exercise 13}: try to compile and run the earlier hello-world example using the \texttt{bsp1d} backend. How many hello world messages are printed? \textbf{Hint}: use \texttt{-np 2} to \texttt{grbrun} to spawn two user processes when executing the program. Now modify the program so that no matter how many user processes are spawned, only one message is printed to the screen (\texttt{stdout}).
+
+\subsubsection*{Collectives}
+
+The most common way to orchestrate data movement between user processes are the so-called \emph{collective communications}. Examples include:
+\begin{enumerate}
+	\item \emph{broadcast}, a communication pattern where one of the user processes is designated the \emph{root} of the communication, and has one payload message that should materialise on all other user processes. 
+	\item \emph{allreduce}, a communication pattern where all user processes have a value that should be \emph{reduced} into a single aggregate value, which furthermore must be available at each user process.
+\end{enumerate}
+
+ALP also exposes collectives, and in the case of (all)reduce does so in an algebraic manner-- that is, the signature of an allreduce expects an explicit monoid that indicates how aggregation is supposed to occur:
+
+\begin{lstlisting} [language=C++, basicstyle=\ttfamily\small, showstringspaces=false, morekeywords=constexpr, morekeywords=size_t ]
+size_t to_be_reduced = grb::spmd<>::pid();;
+grb::monoid::max< int > max;
+grb::RC rc = grb::collectives<>::allreduce( to_be_reduced, max );
+if( rc == grb::SUCCESS ) { assert( to_be_reduced + 1 == grb::spmd<>::nprocs ); }
+if( grb::spmd<>::pid() == 0 ) { std::cout << "There are " << to_be_reduced << " processes\n"; }
+\end{lstlisting}
+
+\noindent \textbf{Exercise 14}: change the initial assignment of \texttt{to\_be\_reduced} to $1$ (at each process). Modify the above example to still compute the number of processes via an allreduce collective. \textbf{Hint}: if aggregation by the max-monoid is not suitable after changing the initialised value, which aggregator would be?
+
+\subsubsection*{Explicit dispatching}
+
+ALP containers are templated in the backend they are compiled for-- this is specified as the second template argument, which is default-initialised to the backend given to the \texttt{grbcxx} wrapper. This means the backend is part of the type of ALP containers, which, in turn, enables the compiler to generate, for each ALP primitive, the code that corresponds to the requested backend. It is, however, possible to manually override this backend template argument, which is useful in conjunction with SPMD in that the combination allows the programmer to define operations that should execute within a user process only, as opposed to defining operations that should be performed \emph{across} user processes.
+
+For example, within a program compiled with the \texttt{bsp1d} or \texttt{hybrid} backends, a user may define a process-local vector as follows: \texttt{grb::Vector< double, grb::nonblocking > local\_x( local\_n )}, where \texttt{local\_n} is some local size indicator that normally is proportional to $n/P$, with $n$ a global size and $P$ the total number of user processes. Using \texttt{grb::spmd}, the programmer may specify that each user process performs different computations on their local vectors. This results in process-local computations that are totally independent of other processes, which later on may be aggregated into some meaningful global state through, for example, collectives.\vspace{.5\baselineskip}
+
+\noindent\textbf{Exercise 15}: use the mechanism here described to write a program that, when executed using $P$ processes, solves $P$ different linear systems $Ax=b_k$ where $A$ is the same at every process while the $b_k$, $0\leq k<P$ are initialised to $(k, k, \ldots, k)^T$ each. Make it so that the program returns the maximum residual (squared 2-norm of $b-Ax$) across the $P$ processes. \textbf{Hint}: reuse one of the pre-implemented linear solvers, such as CG.
+
