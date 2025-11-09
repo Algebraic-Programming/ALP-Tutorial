@@ -663,13 +663,11 @@ dot(x,x) = 14
 $
 \end{lstlisting}
 
-
-
-\section{Makefile and CMake Instructions}\label{sec:build_instructions}
+\subsection{Makefile and CMake Instructions}\label{sec:build_instructions}
 
 Finally, we provide guidance on compiling and running the above example in your own development environment. If you followed the installation steps and used \texttt{grbcxx}, compilation is straightforward. Here we outline two approaches: using the ALP wrapper scripts, and integrating ALP manually via a build system.
 
-\subsection*{Using the ALP compiler wrapper}
+\subsubsection*{Using the ALP compiler wrapper}
 
 The simplest way to compile your ALP-based program is to use the provided wrapper. After sourcing the ALP environment (setenv script), the commands \texttt{grbcxx} and \texttt{grbrun} are available in your PATH. You can compile the example above by saving it (e.g. as \texttt{example.cpp}) and running:
 \begin{lstlisting}[language=bash]
@@ -688,7 +686,7 @@ $ grbrun ./example
 
 (You can also run \texttt{./example} directly for a non-distributed run; \texttt{grbrun} is mainly needed for orchestrating distributed runs or setting up the execution environment.)
 
-\subsection*{Using a custom build (Make/CMake)}
+\subsubsection*{Using a custom build (Make/CMake)}
 
 If you prefer to compile without the wrapper (for integration into an existing project or custom build system), you need to instruct your compiler to include ALP's headers and link against the ALP library and dependencies. The ALP installation (at the chosen \texttt{--prefix}) provides an include directory and a library directory.
 
@@ -723,3 +721,4 @@ Note: If ALP provides a CMake package file, you could use \texttt{find\_package}
 \bigskip
 
 This tutorial has introduced the fundamentals of using ALP/GraphBLAS in C++ on Linux, from installation to running a basic example. With ALP set up, you can explore more complex graph algorithms and linear algebra operations, confident that the library will handle parallelization and optimization under the hood. Happy coding!
+
