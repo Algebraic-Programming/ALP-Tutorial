@@ -371,72 +371,123 @@ From these questions it follows that \texttt{grb::setElement} should only ever b
 
 \subsection{Semirings and Algebraic Operations}
 
-A key feature of GraphBLAS (and ALP) is that operations are defined over semirings rather than just the conventional arithmetic operations. A semiring consists of a pair of operations (an “addition” and a “multiplication”) along with their identity elements, which generalize the standard arithmetic (+ and $\times$). GraphBLAS allows using different semirings to, for example, perform computations like shortest paths or logical operations by substituting the plus or times operations with min, max, logical OR/AND, etc. In GraphBLAS, matrix multiplication is defined in terms of a semiring: the “add” operation is used to accumulate results, and the “multiply” operation is used when combining elements.
-ALP lets you define and use custom \textbf{semirings} by specifying:
+A key feature of GraphBLAS and ALP is that operations are defined over generic algebraic structures rather than over the conventional arithmetic operations only. An example of an algebraic structure is a \emph{semiring}. Loosely speaking, a semiring formalises what we understand as standard linear algebra. Intuitively, a semiring consists of a pair of operations, an ``addition'' and a ``multiplication'', along with their identity elements. The additive and multiplicative operations may differ from standard arithmetic ($+$ and $\times$). The multiplicative operation together with its identity -- which we call $\textbf{1}$ -- forms a monoid. The additive operation together with its identity -- $\mathbf{0}$ -- forms a commutative monoid, meaning that the order of addition shall not change the result ($a+b=b+a$). Formally speaking there are more requirements to monoids and semirings that ALP is aware of and exploits -- however, for the purposes of this tutorial, the preceding intuitive description suffices.
 
+GraphBLAS allows using different semirings to, for example, perform computations like shortest paths or logical operations by substituting the plus or times operations with min, max, logical OR/AND, and so on. This is usually done structurally, by replacing the plus-times semirings with another, such as e.g.\ a min-plus semiring to compute shortest paths. This is why, as you saw in the previous subsection, GraphBLAS primitives explicitly take algebraic structures as a mandatory argument. ALP additionally allows expressing algebraic structures as C++ types, and introduces an algebraic type trait system:
 
 \begin{itemize}
-  \item \textbf{A binary monoid:} an associative, commutative ``addition'' operation with an identity element. Examples:
+  \item \textbf{commutative monoids:} an associative and commutative operation with an identity element. Examples:
   \begin{itemize}
-    \item \texttt{(+}, 0\texttt{)} — the usual addition over numbers
-    \item \texttt{(min}, $+\infty$\texttt{)} — useful for computing minima
+    \item \texttt{(+, 0)} — the usual addition over numbers:
+\begin{lstlisting} [language=C++, basicstyle=\ttfamily\small, showstringspaces=false ]
+grb::Monoid< grb::operators::add< T >, grb::identities::zero >
+\end{lstlisting}
+or, more simply,
+\begin{lstlisting} [language=C++, basicstyle=\ttfamily\small, showstringspaces=false ]
+grb::monoids::plus< T >
+\end{lstlisting}
+    \item \texttt{(min, $\infty$)} — useful for computing minima:
+\begin{lstlisting} [language=C++, basicstyle=\ttfamily\small, showstringspaces=false ]
+grb::Monoid< grb::operators::min< T >, grb::identities::infinity > // or simply
+grb::monoids::min< T >
+\end{lstlisting}
+    \item \texttt{($\land$, true)} — logical semiring for Boolean algebra:
+\begin{lstlisting} [language=C++, basicstyle=\ttfamily\small, showstringspaces=false ]
+grb::Monoid< grb::operators::logical_and >, grb::identities::logical_true > // or
+grb::monoids:land< T >
+\end{lstlisting}
   \end{itemize}
+For all the above examples, the following \emph{type traits} are \texttt{true}:
+\begin{lstlisting} [language=C++, basicstyle=\ttfamily\small, showstringspaces=false ]
+grb::is_monoid< grb::monoid::plus< T > >::value
+grb::is_commutative< grb::monoid::min< T > >::value
+// and so on
+\end{lstlisting}
   
-  \item \textbf{A binary multiplicative operator:} a second operation (not necessarily arithmetic multiplication), with its own identity element. Examples:
-  \begin{itemize}
-    \item \texttt{(*}, 1\texttt{)} — standard multiplication
-    \item \texttt{(AND}, \texttt{true}\texttt{)} — logical semiring for Boolean algebra
-  \end{itemize}
+%  \item \textbf{general monoids:} an operation with an identity element. Example:
+%  \begin{itemize}
+%    \item \texttt{($\times$, 1)} — standard multiplication:
+%\begin{lstlisting} [language=C++, basicstyle=\ttfamily\small, showstringspaces=false ]
+%grb::Monoid< grb::operators::mul< T >, grb::identities::one > // or
+%grb::monoids::times< T >
+%\end{lstlisting}
+   \item \textbf{general binary operators}: binary operators without any additional structure. Examples:
+\begin{lstlisting} [language=C++, basicstyle=\ttfamily\small, showstringspaces=false ]
+grb::operators::mul< double >    // f(x, y) = x * y
+grb::operators::subtract< int >  // f(i, j) = i - j
+grb::operators::zip< char, int > // f(c, i) = {c, i}, an std::pair< char, int >
+\end{lstlisting}
+These too define algebraic type traits:
+\begin{lstlisting} [language=C++, basicstyle=\ttfamily\small, showstringspaces=false ]
+grb::is_operator< OP >::value // true for all above operators
+grb::is_monoid< OP >::value   // false for all above operators
+grb::is_associative< grb::operators::mul< T > >::value    // true
+grb::is_commutative< grb::operators::subtract< T >::value // false
+// ...
+\end{lstlisting}
+    \item \textbf{semirings}: simplified, a commutative ``additive'' monoid combined with a ``multiplicative'' monoid. Examples:
+	\begin{itemize}
+		\item the plus-times semiring: standard linear algebra
+\begin{lstlisting} [language=C++, basicstyle=\ttfamily\small, showstringspaces=false ]
+grb::Semiring<
+    grb::operators::add< T >, grb::operators::mul< T >,
+    grb::identities::zero, grb::identities::one
+> // or
+grb::semirings::plusTimes< T >
+\end{lstlisting}
+		\item the Boolean semiring: perhaps the second most common semiring
+\begin{lstlisting} [language=C++, basicstyle=\ttfamily\small, showstringspaces=false ]
+grb::Semiring<
+    grb::operators::logical_or< bool >, grb::operators::logical_and< bool >,
+    grb::identities::logical_false, grb::identities::logical_true
+> // or
+grb::semirings::boolean
+\end{lstlisting}
+		\item the min-plus semiring: useful for, e.g., shortest paths
+\begin{lstlisting} [language=C++, basicstyle=\ttfamily\small, showstringspaces=false ]
+grb::Semiring<
+    grb::operators::min< T >, grb::operators::add< T >,
+    grb::identities::infinity, grb::identities::zero
+> // or
+grb::semirings:::minPlus< T >
+\end{lstlisting}
+	\end{itemize}
+	For all of the above semirings, we have the following:
+\begin{lstlisting} [language=C++, basicstyle=\ttfamily\small, showstringspaces=false ]
+grb::is_semiring< S >::value // true
+grb::is_monoid< S >::value   // false
+grb::is_operator< S >::value // false
+\end{lstlisting}
+We may furthermore extract the additive and multiplicative monoids and operators from semirings:
+\begin{lstlisting} [language=C++, basicstyle=\ttfamily\small, showstringspaces=false ]
+grb::semirings::boolean mySemiring;
+auto myAddM  = mySemiring.getAdditiveMonoid();
+auto myMulM  = mySemiring.getMultiplicativeMonoid();
+auto myAddOp = mySemiring.getAdditiveOperator();
+auto myMulOp = myMulM.getOperator();
+\end{lstlisting}
+Finally, we may also extract and instantiate identities from semirings:
+\begin{lstlisting} [language=C++, basicstyle=\ttfamily\small, showstringspaces=false, morekeywords=constexpr ]
+grb::semirings::plusTimes< int > mySemiring;
+constexpr int myZero = mySemiring.template getZero< int >();
+double castFromZero = mySemiring.template getZero< double >();
+constexpr int myOne = mySemiring.getMultiplicativeMonoid().template getIdentity();
+\end{lstlisting}
 \end{itemize}
 
-A semiring is a mathematical structure consisting of a set equipped with two binary operations satisfying certain axioms. 
-Many common semirings are provided or can be constructed. 
-For instance, the plus-times semiring uses standard addition as the accumulation (monoid) 
-and multiplication as the combination operator – this yields ordinary linear algebra over real numbers. 
-One can also define a \texttt{min-plus} semiring (useful for shortest path algorithms, where "addition" 
-is min and "multiplication" is numeric addition). ALP’s design allows an “almost unlimited variety of operators 
-and types” in semirings.
+The design of ALP allows the definition of custom operators and identities, and therefore allows a virtually unlimited variety of algebraic structures. The most useful operators, monoids, and semirings are predefined in the namespaces \texttt{grb::operators}, \texttt{grb::monoids}, and \texttt{grb::semirings}, respectively. Let us now employ these algebraic structures to show-case how these amplify the expressiveness of standard linear algebraic primitives.\vspace{.5\baselineskip}
 
-In code, ALP provides templates to construct these. For example, one can define:
-\begin{lstlisting} [language=C++, basicstyle=\ttfamily\small, showstringspaces=false ]
-using Add = grb::operators::add<double>;
-using AddMonoid = grb::Monoid<Add, grb::identities::zero>;
-using Mul = grb::operators::mul<double>;
-using PlusTimes = grb::Semiring<Mul, AddMonoid>;
-PlusTimes plusTimesSemiring;
+\noindent \textbf{Exercise 9} (warm-up): given a \texttt{grb::Vector< double > x}, write an ALP/GraphBLAS function that computes the squared 2-norm of $x$ (i.e., compute $\sum_i x_i^2$) using \texttt{grb::dot}. \textbf{Hint:} consider starting from the code of exercise 8. \textbf{Question}: which semiring applies here?\vspace{.5\baselineskip}
+
+\noindent \textbf{Exercise 10}: ALP and GraphBLAS allow for the use of \emph{improper} semirings -- semirings that are mathematically not true semirings but are still useful in practice. In ALP, improper semirings are made up of 1) an commutative ``additive'' monoid and 2) \emph{any} binary ``multiplicative'' operator. All primitives that take a semiring may also take a pair of such an additive monoid and multiplicative operator-- for example, \texttt{grb::dot( alpha, x, y, plusTimes )} is semantically equivalent to
+\begin{lstlisting} [language=C++, basicstyle=\ttfamily\small, showstringspaces=false, morekeywords=constexpr ]
+grb::dot( alpha, x, y, plusTimes.getAdditiveMonoid(), plusTimes.getMultiplicativeOperator() );
 \end{lstlisting}
-Here we built the plus-times semiring for \texttt{double}: we use the provided addition operator and its identity (zero) to make a monoid, then combine it with the multiply operator to form a semiring. ALP comes with a library of predefined operator functors (in \texttt{grb::operators}) and identities (in \texttt{grb::identities}) for common types. You can also define custom functor structs if needed. In many cases, using the standard \texttt{plusTimesSemiring} (or simply passing operators/monoids directly to functions) is sufficient for basic algorithms.
+Take note of \texttt{grb::operators::abs\_diff< double >}. What does this binary operator compute? Use this operator and the notion of improper semirings to compute the $1$-norm difference between two vectors $x$ and $y$ using a single call to \texttt{grb::dot}. \textbf{Hint:} start off from the code from the previous exercise.\vspace{.5\baselineskip}
 
-\subsection{Primitive Operations (mxv, eWiseMul, dot, etc.)}
+\noindent \textbf{Exercise 11}: consider a square matrix \texttt{grb::Matrix< double > G} the matrix representation of an edge-weighted graph $G$. Consider \texttt{grb::Vector< double > s} (source) a vector of matching dimension to $G$ with a single value zero ($0$) at an index of your choosing. \textbf{Question}: normally, under a plusTimes semiring, $Gs$ would return a zero vector. However, what interpretation would $Gs$ have under the minPlus semiring? Use this interpretation to compute the shortest path to any other vertex  reachable from your chosen source. Then, extend the approach to compute the shortest path two hops away from your chosen source.\vspace{.25\baselineskip}
 
-Using the above containers and semirings, ALP provides a set of primitive functions in the \texttt{grb} namespace to manipulate the data. These functions are free functions (not class methods) and typically take the output container as the first parameter (by reference), followed by input containers and an operator or semiring specification. The most important primitives include:
-
-    \textbf{grb::set} – Assigns all elements of a container to a given value. For example, \texttt{grb::set(x, 1.0)} will set every entry of vector \texttt{x} to $1.0$ (making all indices present with value 1.0). This is useful for initialization (if called on an empty vector, it will insert all indices with that value). There is also \texttt{grb::setElement(container, value, index[, index2])} to set a single element: for a vector, you provide an index; for a matrix, a row and column. For example, \texttt{grb::setElement(y, 3.0, n/2)} sets $y_{n/2} = 3.0$.
-\newline
-
-    \textbf{grb::mxv} – Perform matrix-vector multiplication on a semiring. The call \texttt{grb::mxv(u, A, v, semiring)} computes $u = A \otimes v$ (where $\otimes$ denotes matrix-vector multiply under the given semiring). For the plus-times semiring, this corresponds to the usual linear algebra operation $u_i = \sum_j A_{ij} \times v_j$ (summing with + and multiplying with $\times$). The output vector \texttt{u} must be pre-allocated to the correct size (number of rows of $A$). By default, ALP’s \texttt{mxv} adds into the output vector (as if doing $u += A \times v$). If you want to overwrite \texttt{u} instead of accumulate, you may need to explicitly set \texttt{u} to the identity element (e.g. zero) beforehand or use descriptors (advanced options) – but for most use cases, initializing $u$ to 0 and then calling mxv is sufficient to compute $u = A x$. For example, \texttt{grb::mxv(y, A, x, plusTimesSemiring)} will compute $y_i = \sum_j A_{ij} x_j$ using standard arithmetic (assuming \texttt{y} was zeroed initially).
-\newline
-
-      \textbf{grb::dot} – Compute the dot product of two vectors. This is essentially a special case of a matrix-vector multiply or a reduce operation. ALP provides \texttt{grb::dot(result, u, v, semiring)} to compute a scalar result = $u^T \otimes v$ under a given semiring. For the standard plus-times semiring, \texttt{grb::dot(alpha, u, v, plusTimesSemiring)} will calculate $\alpha = \sum_i (u_i \times v_i)$ (i.e. the dot product of $u$ and $v$). If you use a different monoid or operator, you can compute other pairwise reductions (for example, using a \texttt{min} monoid with logical multiplication could compute something like an “AND over all i” if that were needed). In most cases, you'll use dot with the default arithmetic semiring for inner products. The output \texttt{alpha} is a scalar (primitive type) passed by reference, which will be set to the resulting value.
-\newline
-
-      \textbf{grb::apply} – Apply a binary operator out-of-place between two scalars and store result in a third scalar. 
-      The function \texttt{grb::apply}\,(z, x, s, op) applies the binary functor \texttt{op} to scalar \texttt{x} 
-      and scalar \texttt{s} and writes the result into scalar \texttt{z}. 
-      For example, \texttt{grb::apply}\,(z, x, s, grb::operators::mul<double>()) computes $z = x \times s$. 
-      Note: some backends like nonblocking or hyperdag may rely on \texttt{grb::apply} to infer data dependencies,
-      therefore pure C++ should be avoided and implementations should ensure all dependencies are explicit.
-\newline
-      \textbf{grb::eWiseApply} – Apply a binary operator element-wise between two containers (out-of-place vector/matrix update). 
-      The function \texttt{grb::eWiseApply}\,(z, x, y, op) applies the binary functor \texttt{op} to corresponding elements of \texttt{x} and \texttt{y} and writes the results into \texttt{z}; both inputs and the output are containers of matching dimensions. 
-      For example, \texttt{grb::eWiseApply}\,(z, x, y, grb::operators::mul<double>()) computes $z_i = x_i \times y_i$ for indices where the operation is defined. 
-      In summary, both \texttt{grb::apply}\,() and \texttt{grb::eWiseApply}\,() require a binary operator and perform out-of-place elementwise updates (one with a scalar, the other with a second container).
-
-\paragraph{API usage notes:} All the above operations require that output parameters be passed by reference, since they are modified in place (e.g., \texttt{y} in \texttt{grb::mxv(y, A, x, ...)} is updated with the result). Input objects are typically passed by const-reference. You should ensure that the output container is allocated with the correct size beforehand – ALP will not automatically resize vectors or matrices on operation calls if dimensions mismatch. If dimensions do not agree (e.g., you try to multiply an $m\times n$ matrix with a vector of length not $n$), 
-the function will return an error code to indicate the misuse. In fact, most ALP primitives return a status code of type \texttt{grb::RC} (with \texttt{grb::SUCCESS} indicating success). For clarity, our code examples will omit explicit error handling, but in a real program you may check the returned code of each operation.
-
-In the next section, we will put these concepts together in a concrete example.
-
+\textbf{Bonus question}: what interpretation could $G^ks$ have under the maxTimes semiring?
 
 \section{Solution to Exercise 8}\label{sec:simple_example}
 
