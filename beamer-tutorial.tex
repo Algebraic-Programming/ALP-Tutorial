@@ -1135,7 +1135,7 @@ kcore_decomposition.hpp  norm.hpp
 % =========================
 \section{Tuesday 11 Nov, Morning}
 
-\subsection{8) Hands-on: complete exercise 8 (3.4)}
+\subsection{4) Hands-on: numerical linear algebra (3.4, ex 8)}
 
 \begin{frame}{Complete Exercise 8}
 \begin{itemize}
@@ -1145,8 +1145,10 @@ kcore_decomposition.hpp  norm.hpp
 % Owner: DJ
 \end{frame}
 
-\subsection{9) Semirings, monoids, operators (add exercise: shortest path)}
-\begin{frame}[fragile]{Semirings, monoids, operators}
+\subsection{8) Algebraic structures}
+
+\begin{frame}[fragile]{Intro to algebraic structures}
+We learned:
 \begin{itemize}
     \item Defining and using semirings
     \item Built-ins: plusTimes, minPlus, boolean
@@ -1164,12 +1166,22 @@ kcore_decomposition.hpp  norm.hpp
 % \end{lstlisting}
 \end{frame}
 
-\subsection{10) Solvers, transition path, Python API, ABI}
+\subsection{9) Hands-on: norms and shortest paths through semirings (3.5)}
+
+\begin{frame}{Hands-on}
+Refer to the tutorial: section 3.5, exercises 9 \& 10
+\begin{itemize}
+	\item stretch goal: exercise 11
+\end{itemize}
+\end{frame}
+
+\subsection{10) Solvers, transition path, Python API}
+
 \begin{frame}{Solvers and transition path}
 \begin{itemize}
     \item Sparse CG solver API
-    \item Preconditioners
-    \item ABI and Python API notes
+    \item Preconditioned CG
+    \item Python API notes
 \end{itemize}
 % Owner: DJ
 % Source (ALP_Transition_Path_Tutorial.tex - API):
@@ -1193,9 +1205,9 @@ kcore_decomposition.hpp  norm.hpp
 \begin{frame}{Transition path: Black-box algorithms exposure}
 \framesubtitle{What is (and is not) optimised}
 \begin{itemize}
-  \item \textbf{Exposed set:} Iterative solvers (CG, BiCGSTAB, GMRES, k-means, PageRank, connected components, etc.) via stable headers / ABI.
+  \item \textbf{Exposed set:} Iterative solvers (CG, BiCGSTAB, GMRES, k-means, PageRank, connected components, etc.) via stable headers.
   \item \textbf{Internals:} Inside each solver ALP leverages traits (associativity, identities, sparsity, mask semantics) for backend-specific scheduling and fusion.
-  \item \textbf{Boundary limit:} Data marshaling between your legacy structures and ALP containers is minimal but still a barrier; external loops remain opaque so global multi-primitive fusion cannot cross the ABI boundary.
+  \item \textbf{Boundary limit:} Data marshaling between your legacy structures and ALP containers is minimal but still a barrier; external loops remain opaque so global multi-primitive fusion cannot cross the library boundary.
   \item \textbf{Performance model:} You gain highly-tuned inner iterations; you \emph{do not} gain automatic restructuring of surrounding pre/post processing steps.
   \item \textbf{When to move further:} If pre/post steps dominate runtime or you want algebraic transformations (e.g. descriptor-based masking), consider refactoring those steps into ALP primitives.
 \end{itemize}
@@ -1230,7 +1242,7 @@ size_t n; // dimension
 std::vector<double> x(n, 0.0);    // initial guess
 std::vector<double> b = load_rhs(n);
 
-grb_cg_handle handle = nullptr; // opaque handle type from ABI
+grb_cg_handle handle = nullptr; // opaque handle type
 int rc = sparse_cg_init_dii(&handle, n, A_vals, A_cols, A_offs);
 if(rc) { /* error handling */ }
 
@@ -1285,13 +1297,13 @@ pcg.set_preconditioner(DiagInv{diag_inv_ptr});
 pcg.solve(x.data(), b.data(), 1e-8, 1000);
 \end{lstlisting}
 \begin{itemize}
-  \item \textbf{Opaque ABI vs templates:} ABI layer exposes fixed signatures (e.g. \verb|_dii|); template interface offers richer composition (callbacks, custom operators) when building from source.
+  \item \textbf{typed interface vs templates:} API exposes fixed signatures (e.g. \verb|_dii|); template interface offers richer composition (callbacks, custom operators) when building from source.
   \item \textbf{Fallback:} If no preconditioner is set, solver defaults to plain CG.
 \end{itemize}
 \end{frame}
 
-%% 11 Hands-on: Section 8; CG example; Python example
-\subsection{11) Hands-on: Section 8; CG example; Python example}
+%% 11 Hands-on: Section 5; CG example; Python example
+\subsection{11) Hands-on: Section 5; CG example; Python example; explicit SIMD}
 \begin{frame}[fragile]{Python: Conjugate Gradient usage}
 \framesubtitle{Calling a solver from a wheel}
 \begin{lstlisting}[language=Python]
@@ -1469,9 +1481,6 @@ for name, its, res, dt in results:
 \end{lstlisting}
 \end{frame}
 
- 
-\subsection{12) Stretch goal: explicit SPMD control}
-
 \begin{frame}{Advanced ALP: explicit SPMD control}
 ALP can compile code to run programs fully hybrid-parallel:
 \begin{itemize}
@@ -1554,7 +1563,8 @@ If you want to explicit run a different ALP computation on different processes:
 % =========================
 % HIPO: 
 % =========================
-\subsection{HIPO: Introduction and Motivation}
+\subsection{12) HIPO: Introduction and Motivation}
+
 \begin{frame}{HIPO: Huawei's Hardware Integrated Platform for Optimisation}
 \framesubtitle{Problem formulation: The Challenge}
 \begin{itemize}
@@ -1623,7 +1633,6 @@ If you want to explicit run a different ALP computation on different processes:
 \end{itemize}
 % Owner: PA
 \end{frame}
-
 
 \begin{frame}{HIPO Modeling}
 \framesubtitle{Current models and their limitations}
@@ -1861,7 +1870,7 @@ T = \sum_{l=0}^{d} f\Big( \sum_{i=0}^{n} c_{\text{comm}}(i,l),\, c_{\text{comp}}
 \end{itemize}
 \end{frame}
 
-\subsection{14) SPMD execution, Replica exchange}
+\subsection{13) SPMD execution, Replica exchange}
 
 % \begin{frame}{SPMD execution, Replica exchange}
 % \begin{itemize}
@@ -2126,7 +2135,7 @@ grb::RC rc = grb::algorithms::simulated_annealing_RE(
 % =========================
 \section{Wednesday 12 Nov}
 
-\subsection{15) WIP overview: dense backend, tensor, stencil, EM simulations}
+\subsection{14) WIP overview: dense backend, tensor, stencil, EM simulations}
 \begin{frame}{WIP overview}
 \begin{itemize}
     \item Dense backend status
@@ -2135,7 +2144,7 @@ grb::RC rc = grb::algorithms::simulated_annealing_RE(
 % Owner: DJ
 \end{frame}
 
-\subsection{16) Deep technical? Future work (autodiff)}
+\subsection{15) Deep technical? Future work (autodiff)}
 \begin{frame}{Future work (autodiff)}
 \begin{itemize}
     \item Autodiff integration ideas
@@ -2145,3 +2154,4 @@ grb::RC rc = grb::algorithms::simulated_annealing_RE(
 \end{frame}
 
 \end{document}
+
