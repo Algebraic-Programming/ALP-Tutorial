@@ -495,40 +495,42 @@ Info: grb::finalize (reference) called.
 \end{frame}
 
 \begin{frame}[fragile]{2.2. Hands-on: Basic Container I/O}
-\framesubtitle{Container primitives and accessing elements}
-ALP/GraphBLAS containers use iterators and custom primitives to manipulate data:
-\\
-\vspace{1em}
+\framesubtitle{Container primitives and Exercise 3}
+\begin{columns}[T]
+\begin{column}{0.45\textwidth}
 \textbf{Basic container manipulation primitives:}
+\vspace{0.5em}
 \begin{itemize}
-    \item \texttt{grb::clear(container)}: removes all elements
-    \item \texttt{grb::set(vector,scalar)}: sets all elements to \textit{scalar} (-> dense)
-    \item \texttt{grb::setElement(vector,scalar,index)}: sets element at \textit{index} to \textit{scalar}
+    \item \texttt{grb::clear(container)}:\\ removes all elements
+    \item \texttt{grb::set(vector,scalar)}:\\ sets all elements to \textit{scalar} (-> dense)
+    \item \texttt{grb::setElement(vector,scalar
+    \\,index)}: sets element at \textit{index} to \textit{scalar}
 \end{itemize}
-% Owner: PA
-% Source (ALP_Tutorial.tex - Basic Container I/O)
-\end{frame}
+\end{column}
 
-\begin{frame}[fragile]{2.2. Hands-on: Basic Container I/O}
-    \framesubtitle{Exercise 3: Container manipulation}
+\begin{column}{0.5\textwidth}
     \textbf{Exercise 3.} Allocate:
     \begin{itemize}
-        \item \texttt{grb::Vector<bool>} \texttt{x}, \texttt{y}: length 497, capacities 497 and 1
-        \item \texttt{grb::Matrix<void>} \texttt{A}: size $497 \times 497$, capacity 1727
+        \item \texttt{grb::Vector<bool>} \texttt{x}, \texttt{y}:\\ length 497, capacities 497 and 1
+        \item \texttt{grb::Matrix<void>} \texttt{A}:\\ size $497 \times 497$, capacity 1727
         \item Initialize \texttt{y} with \texttt{true} at index 200
         \item Initialize \texttt{x} with \texttt{false} everywhere
         \item Print nnz for \texttt{x} and \texttt{y}
     \end{itemize}
-    Start from \texttt{alp\_containers\_ex2.cpp} 
+\end{column}
+\end{columns}
+
+\vspace{1em}
+Start from \texttt{alp\_containers\_ex2.cpp} 
 \begin{lstlisting}[style=terminal, language=bash, basicstyle=\ttfamily\scriptsize\color{terminaltext}] 
 cp alp_containers_ex2.cpp alp_containers_ex3.cpp 
 \end{lstlisting}
-    \textbf{Expected output:}
-\begin{lstlisting}[style=terminal, language=bash, basicstyle=\ttfamily\scriptsize\color{terminaltext}]
-nonzeroes in x: 497
-nonzeroes in y: 1
-\end{lstlisting}
-    \textbf{Bonus question:} Print the capacity of \texttt{y}. Should the value returned be unexpected, considering the specification in the user documentation, is this a bug in ALP?
+% \textbf{Expected output:}
+% \begin{lstlisting}[style=terminal, language=bash, basicstyle=\ttfamily\scriptsize\color{terminaltext}]
+% nonzeroes in x: 497
+% nonzeroes in y: 1
+% \end{lstlisting}
+\textbf{Bonus question:} Print the capacity of \texttt{y}. Should the value returned be unexpected, considering the specification in the user documentation, is this a bug in ALP?
 % Owner: PA
 % Source (ALP_Tutorial.tex - Basic Container I/O, Exercise 3)
 \end{frame}
