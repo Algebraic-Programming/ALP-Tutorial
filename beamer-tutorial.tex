@@ -476,9 +476,9 @@ grb::Matrix<void> A(150000, 100000);
     \item \texttt{grb::Matrix<double>} \texttt{B}: size $(100 \times 1000)$, capacity 5000
     \item Start from \texttt{alp\_hw.cpp} (in the \texttt{hello\_world} function)
 \begin{lstlisting}[style=terminal, language=bash, basicstyle=\ttfamily\scriptsize\color{terminaltext}] 
-cp alp_hw.cpp alp_containers_ex2.cpp 
+cp alp_hw.cpp alp_containers_ex2.cpp
 \end{lstlisting}
-    \item \textbf{Hint:} search the documentation for how to override the default capacities
+    \item \textbf{Hint:} \href{http://albert-jan.yzelman.net/alp/user/group__IO.html#ga0857eef4e6995027be48e7d6b03ea4d3}{\textcolor{blue}{search the documentation}} for \texttt{grb::resize} to override the default capacities
 \end{itemize}
 \textbf{Expected output}:
 \begin{lstlisting}[style=terminal, language=bash, basicstyle=\ttfamily\scriptsize\color{terminaltext}]
@@ -498,8 +498,7 @@ Info: grb::finalize (reference) called.
 \framesubtitle{Container primitives and Exercise 3}
 \begin{columns}[T]
 \begin{column}{0.45\textwidth}
-\textbf{Basic container manipulation primitives:}
-\vspace{0.5em}
+\textbf{Container manipulation primitives:}
 \begin{itemize}
     \item \texttt{grb::clear(container)}:\\ removes all elements
     \item \texttt{grb::set(vector,scalar)}:\\ sets all elements to \textit{scalar} (-> dense)
@@ -530,7 +529,7 @@ cp alp_containers_ex2.cpp alp_containers_ex3.cpp
 % nonzeroes in x: 497
 % nonzeroes in y: 1
 % \end{lstlisting}
-\textbf{Bonus question:} Print the capacity of \texttt{y}. Should the value returned be unexpected, considering the specification in the user documentation, is this a bug in ALP?
+\textbf{Bonus question:} Print the capacity of \texttt{y}. Should the value returned be unexpected, considering the specification in the user documentation? Is this a bug in ALP?
 % Owner: PA
 % Source (ALP_Tutorial.tex - Basic Container I/O, Exercise 3)
 \end{frame}
