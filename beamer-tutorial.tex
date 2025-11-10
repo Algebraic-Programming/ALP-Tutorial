@@ -1020,11 +1020,15 @@ Bonus, the following descriptor short-hands building $x$:
 
 \href{https://pypi.org/project/alp-graphblas/}{PyPI project: alp-graphblas}
 
-Install with:
+Install from public PyPI repository:
 \begin{lstlisting}[style=terminal,language=bash]
-conda activate py311 # make sure to have > python3.11 version 
 pip install "alp-graphblas"
 \end{lstlisting}
+
+For offline installation, download the wheel file from PyPI and install from the file.
+Example, this scripts created a temp conda env, installs pyalp, runs the scripts and cleans up:
+\textbf{solutions/ex9/run.sh}
+use this script to run the examples in an isolated environment with proper python version. 
 
 \begin{lstlisting}[language=Python, basicstyle=\ttfamily\tiny, frame=single, showstringspaces=false]
 import numpy as np
