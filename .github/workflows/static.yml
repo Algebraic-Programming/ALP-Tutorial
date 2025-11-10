@@ -39,41 +39,10 @@ jobs:
         name: latex-pdf-output
         path: main.pdf # Assuming main.pdf is in the root after compilation
 
-  build_html: # New job for HTML compilation
-    runs-on: ubuntu-latest
-    # This entire job will run inside the specified container
-    container:
-      image: texlive/texlive:latest # This container has mk4ht
-
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-      # Note: When using a container, 'actions/checkout' checks out into /github/workspace
-      # The default working directory for subsequent 'run' commands will be this path.
-
-    - name: Compile LaTeX to HTML using tex4ht
-      # 'mk4ht' is now guaranteed to be available in this container environment
-      run: |
-        echo "Starting HTML compilation with mk4ht..."
-        mk4ht htlatex main.tex "config.cfg,xhtml" "-p"
-        
-        # Create output directory and move files
-        mkdir -p html_output
-        mv main.html html_output/
-        # Add commands to move other generated files like .css, image folders etc.
-        if [ -f main.css ]; then mv main.css html_output/; fi
-        if [ -d main-images ]; then mv main-images html_output/; fi
-        echo "HTML compilation complete and files moved to html_output/."
-
-    - name: Upload HTML artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: latex-html-output
-        path: html_output/
 
   # Single deploy job since we're just deploying
   deploy:
-    needs: [build_pdf, build_html]
+    needs: [build_pdf]
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -86,16 +55,13 @@ jobs:
     - name: Download all artifacts
       uses: actions/download-artifact@v4
       with:
-        path: artifacts/ # Downloads both latex-pdf-output and latex-html-output
+        path: artifacts
 
     - name: Prepare public directory for Pages
       run: |
         mkdir public
         # Move PDF to public/
         mv artifacts/latex-pdf-output/main.pdf public/
-        # Move HTML files to public/html/
-        mkdir -p public/html
-        mv artifacts/latex-html-output/* public/html/
 
     - name: Setup Pages
       uses: actions/configure-pages@v5
