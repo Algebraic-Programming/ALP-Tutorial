@@ -66,6 +66,8 @@ jobs:
 
   # Single deploy job since we're just deploying
   deploy:
+    # Only deploy from the protected default branch
+    if: github.ref == 'refs/heads/master'
     needs: [build_pdf]
     environment:
       name: github-pages
