@@ -901,10 +901,10 @@ dot(x,x) = 14
 \end{frame}
 
 \begin{frame}[fragile]{Exercise 8: Starter code (C++)}
-\framesubtitle{Hands-on: fill the TODOs to make it run}
 
 	\textbf{Your tasks on this slide}
 \begin{itemize}
+  \item Open code \texttt{alp\_exercise8\_starter.cpp} from the tutorial materials. And complete the following tasks:
   \item Build matrix $A$ from (I,J,values): reserve capacity and call \texttt{buildMatrixUnique}.
   \item Initialize vector $x = [1,2,3]^\top$ using \texttt{setElement} (clear first with \texttt{set}).
   \item Compute $y = A\cdot x$ via \texttt{mxv} using the \texttt{plusTimes} semiring.
@@ -917,9 +917,10 @@ dot(x,x) = 14
 \end{frame}
 
 \begin{frame}[fragile]{Exercise 8: Starter code (C++) — continued}
-\framesubtitle{Complete the TODOs}
 
-\begin{lstlisting}[ language=C++, basicstyle=\ttfamily\scriptsize, caption={Exercise 8 starter: complete the TODOs}, label=lst:exercise8-starter, showstringspaces=false, aboveskip=2pt, belowskip=2pt]
+\begin{lstlisting}[ language=C++, basicstyle=\ttfamily\scriptsize, 
+  caption={Exercise 8 starter: complete the TODOs}, 
+  label=lst:exercise8-starter, showstringspaces=false, aboveskip=2pt, belowskip=2pt]
 #include <cstdio>
 #include <iostream>
 #include <vector>
@@ -1021,6 +1022,7 @@ Bonus, the following descriptor short-hands building $x$:
 
 Install with:
 \begin{lstlisting}[style=terminal,language=bash]
+conda activate py311 # make sure to have > python3.11 version 
 pip install "alp-graphblas"
 \end{lstlisting}
 
@@ -1431,7 +1433,11 @@ cp312 manylinux_x86_64  (1.7 MB)  macOS15_arm64 (492.9 kB)
 \end{frame}
 
 \begin{frame}[fragile]{Exercise 9: Starter code (Python)}
-\framesubtitle{Fill in TODOs (timing, SPD generation, loop)}
+\begin{itemize}
+\item {Fill in TODOs (timing, SPD generation, loop)}
+\item {Test execution after each TODO to ensure correctness}
+\item {Test execution time}
+\end{itemize}
 \begin{lstlisting}[language=Python, basicstyle=\ttfamily\scriptsize, frame=single, showstringspaces=false, caption={Exercise 9 starter}, label={lst:exercise9-starter}]
 import numpy as np, time
 import pyalp
