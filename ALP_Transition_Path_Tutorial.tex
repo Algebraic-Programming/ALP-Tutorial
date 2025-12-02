@@ -1,19 +1,25 @@
-\section{Introduction to ALP and Transition Paths}\label{sec:intro}
+\section{ALP Transition Paths}\label{sec:intro}
 
 \textbf{Algebraic Programming (ALP)} is a C++ framework for high-performance linear algebra that can auto-parallelize and auto-optimize your code. A key feature of ALP is its transition path APIs, which let you use ALP through standard interfaces without changing your existing code. In practice, ALP generates drop-in replacements for established linear algebra APIs. You simply re-link your program against ALP's libraries to get optimized performance (no code modifications needed). ALP v0.8 provides transition-path libraries for several standards, including the NIST Sparse BLAS and a CRS-based iterative solver interface (ALP/Solver). This means you can take an existing C/C++ program that uses a supported API and benefit from ALP's optimizations (such as vectorization and parallelism) just by linking with ALP's libraries [1].
 
 One of these transition paths, and the focus of this tutorial, is ALP's \textbf{sparse Conjugate Gradient (CG) solver}. This CG solver accepts matrices in Compressed Row Storage (CRS) format (also known as CSR) and solves $Ax=b$ using an iterative method. Under the hood it leverages ALP's non-blocking execution model, which overlaps computations and memory operations for efficiency. From the user's perspective, however, the solver is accessed via a simple C-style API that feels synchronous. In this workshop, we'll learn how to use this CG solver interface step by step: from setting up ALP, to coding a solution for a small linear system, to building and running the program.
 
-\section{Setup: Installing ALP and Preparing to Use the Solver}\label{sec:setup}
+\subsection{Setup: Installing ALP and Preparing to Use the Solver}\label{sec:setup}
 
 This section explains how to install ALP on a Linux system and compile a simple example. 
 ALP (Algebraic Programming) provides a C++17 library implementing the GraphBLAS interface 
 for linear-algebra-based computations.
 
-\subsection{Installation (see Section \ref{sec:installation})}
+\subsubsection*{Installation on Linux}
 
-Note: Before continuing, complete the installation and build steps described in Section \ref{sec:installation}. 
-These steps ensure that ALP is properly compiled and it can be used as a library.
+\begin{enumerate}
+\item Install prerequisites: Ensure you have a C++11 compatible compiler (e.g. \texttt{g++} 4.8.2 or later) with OpenMP support, CMake (>= 3.13) and GNU Make, plus development headers for libNUMA and POSIX threads.
+\end{enumerate}
+
+For example, on Debian/Ubuntu:
+\begin{verbatim}
+sudo apt-get install build-essential libnuma-dev libpthread-stubs0-dev cmake
+\end{verbatim}
 
 \textbf{Direct linking option}: If you prefer to compile with your usual compiler, 
 you need to include ALP's headers and link against the ALP libraries manually. 
@@ -34,7 +40,7 @@ Using grbcxx is recommended for simplicity, but it's good to know what happens u
 Now that our environment is set up, let's look at the CG solver API.
 
 
-\section{Overview of ALP's Non-Blocking Sparse CG API}\label{sec:api}
+\subsection{Overview of ALP's Non-Blocking Sparse CG API}\label{sec:api}
 
 The ALP/Solver transition path provides a C-style interface for initializing and running a Conjugate Gradient solver. All functions are exposed via a header (e.g. solver.h in ALP's include directory) and use simple types like pointers and handles. The main functions in this API are:
 
@@ -50,14 +56,14 @@ The ALP/Solver transition path provides a C-style interface for initializing and
 
 This API is non-blocking in the sense that internally ALP may overlap operations (like sparse matrix-vector multiplications and vector updates) and use asynchronous execution for performance. However, the above functions themselves appear synchronous. For example, sparse\_cg\_solve will only return after the solve is complete (there’s no separate “wait” call exposed in this C interface). The benefit of ALP’s approach is that you, the developer, don’t need to manage threads or message passing at all. ALP’s GraphBLAS engine handles parallelism behind the scenes. You just call these routines as you would any standard library. Now, let’s put these functions into practice with a concrete example.
 
-  
-\section{Example: Solving a Linear System with ALP’s CG Solver}
 
-Suppose we want to solve a small system $Ax = b$ to familiarize ourselves with the CG interface. We will use the following $3 \times 3$ symmetric positive-definite matrix $A$: $$ A = \begin{pmatrix} 4 & 1 & 0\\ 
-        1 & 3 & -1\\ 
-        0 & -1 & 2 \end{pmatrix}, $$ 
-        and we choose a right-hand side vector $b$ such that the true solution is easy to verify. If we take the solution to be $x = (1,\;2,\;3)$, then $b = A x$ can be calculated as: $$ b = \begin{pmatrix}6 \ 4 \ 4 \end{pmatrix}, $$ since $4\cdot1 + 1\cdot2 + 0\cdot3 = 6$, $1\cdot1 + 3\cdot2 + (-1)\cdot3 = 4$, and $0\cdot1 + (-1)\cdot2 + 2\cdot3 = 4$. Our goal is to see if the CG solver recovers $x = (1,2,3)$ from $A$ and $b$. 
-        
+\subsection{Example: Solving a Linear System with ALP’s CG Solver}
+
+Suppose we want to solve a small system $Ax = b$ to familiarize ourselves with the CG interface. We will use the following $3 \times 3$ symmetric positive-definite matrix $A$: $$ A = \begin{pmatrix} 4 & 1 & 0\\
+        1 & 3 & -1\\
+        0 & -1 & 2 \end{pmatrix}, $$
+        and we choose a right-hand side vector $b$ such that the true solution is easy to verify. If we take the solution to be $x = (1,\;2,\;3)$, then $b = A x$ can be calculated as: $$ b = \begin{pmatrix}6 \ 4 \ 4 \end{pmatrix}, $$ since $4\cdot1 + 1\cdot2 + 0\cdot3 = 6$, $1\cdot1 + 3\cdot2 + (-1)\cdot3 = 4$, and $0\cdot1 + (-1)\cdot2 + 2\cdot3 = 4$. Our goal is to see if the CG solver recovers $x = (1,2,3)$ from $A$ and $b$.
+
 We will hard-code $A$ in CRS format (also called CSR: Compressed Sparse Row) for the solver. In CRS, the matrix is stored by rows, using parallel arrays for values and column indices, plus an offset index for where each row starts. For matrix $A$ above:
 
 
@@ -83,34 +89,34 @@ for the solver API, set up the matrix and vectors, call the API functions in ord
 int main(){
     // Define the 3x3 test matrix in CRS format
     const size_t n = 3;
-    
+
     double A_vals[] = {
         4.0, 1.0, // row 0 values
         1.0, 3.0, -1.0, // row 1 values
         -1.0, 2.0 // row 2 values
     };
-    
+
     int A_cols[] = {
         0, 1, // row 0 column indices
         0, 1, 2, // row 1 column indices
         1, 2 // row 2 column indices
     };
-    
+
     int A_offs[] = { 0, 2, 5, 7 }; // row start offsets: 0,2,5 and total nnz=7
-    
+
     // Right-hand side b and solution vector x
     double b[] = { 6.0, 4.0, 4.0 }; // b = A * [1,2,3]^T
     double x[] = { 0.0, 0.0, 0.0 }; // initial guess x=0 (will hold the solution)
-    
+
     // Solver handle
     sparse_cg_handle_t handle;
-    
+
     int err = sparse_cg_init_dii(&handle, n, A_vals, A_cols, A_offs);
     if (err != 0) {
         fprintf(stderr, "CG init failed with error %d\n", err);
         return EXIT_FAILURE;
     }
-    
+
     // (Optional) set a preconditioner here if needed, e.g. Jacobi or others.
     // We skip this, so no preconditioner (effectively M = Identity).
     err = sparse_cg_solve_dii(handle, x, b);
@@ -120,13 +126,13 @@ int main(){
         sparse_cg_destroy_dii(handle);
         return EXIT_FAILURE;
     }
-    
+
     // Print the solution vector x
     printf("Solution x = [%.2f, %.2f, %.2f]\n", x[0], x[1], x[2]);
-    
+
     // Clean up
     sparse_cg_destroy_dii(handle);
-    
+
     return 0;
 }
 
@@ -138,27 +144,27 @@ Let’s break down what happens here:
 \begin{itemize}
 
     \item We included <graphblas/solver.h> (the exact include path might be alp/solver.h or similar depending on ALP’s install, but typically it resides in the GraphBLAS include directory of ALP). This header defines the sparse\_cg\_* functions and the \textbf{sparse\_cg\_handle\_t} type.
-    
+
     \item We set up the matrix data in CRS format. For clarity, the values and indices are grouped by row in the code. The offsets array \{0,2,5,7\} indicates: row0 uses vals[0..1], row1 uses vals[2..4] , row2 uses vals[5..6]. The matrix dimension n is 3.
-    
+
     \item We prepare the vectors b and x. b is initialized to \{6,4,4\} as computed above. We initialize x to all zeros (as a starting guess). In a real scenario, you could start from a different guess, but zero is a common default.
-    
+
     \item We create a \textbf{sparse\_cg\_handle\_t} and call {sparse\_cg\_init}. This hands the matrix to ALP’s solver. Under the hood, ALP will likely copy or reference this data and possibly analyze $A$ for the CG algorithm. We check the return code err, if non-zero, we print an error and exit. (For example, an error might occur if n or the offsets are inconsistent. In our case, it should succeed with err == 0.)
-    
+
     \item We do not call \textbf{sparse\_cg\_set\_preconditioner} in this example, which means the CG will run unpreconditioned. If we wanted to, we could implement a simple preconditioner. For instance, a Jacobi preconditioner would use the diagonal of $A$: we’d create an array with $\text{diag}(A) = [4,3,2]$ and a function to divide the residual by this diagonal. We would then call \textbf{sparse\_cg\_set\_preconditioner(handle, my\_prec\_func, diag\_data)}. For brevity, we skip this. ALP will just use the identity preconditioner by default (no acceleration).
-    
+
     \item Next, we call \textbf{sparse\_cg\_solve(handle, x, b)}. ALP will iterate internally to solve $Ax=b$. When this function returns, x should contain the solution. We again check err. A non-zero code could indicate the solver failed to converge (though typically it would still return 0 and one would check convergence via a status or residual, ALP’s API may evolve to provide more info). In our small case, it should converge in at most 3 iterations since $A$ is $3\times3$.
-    
+
     \item We print the resulting x. We expect to see something close to [1.00, 2.00, 3.00]. Because our matrix and $b$ were consistent with an exact solution of $(1,2,3)$, the CG method should find that exactly (within floating-point rounding). You can compare this output with the known true solution to verify the solver worked correctly.
-    
+
     \item Finally, we call \textbf{sparse\_cg\_destroy(handle)} to free ALP’s resources for the solver. This is important especially for larger problems to avoid memory leaks. After this, we return from main.
-    
+
 \end{itemize}
 
 
 
 \section*{Building and Running the Example}
-To compile the above code with ALP, we will use the direct linking option as discussed. 
+To compile the above code with ALP, we will use the direct linking option as discussed.
 \begin{lstlisting}[language=bash, basicstyle=\ttfamily\small, showstringspaces=false]
 g++ example.cpp -o cg_demo \
 -I$ALP_INSTALL_DIR/include \
@@ -190,7 +196,7 @@ standard code, and ALP handles the rest. We focused on the CG solver, but the sa
 supported interfaces. Feel free to experiment with different matrices, add a custom preconditioner function
 to see its effect, or try other solvers if ALP introduces them in future releases. Happy coding!
 
-    
+
 
 
 \bibliographystyle{plain}

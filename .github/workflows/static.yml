@@ -4,7 +4,7 @@ name: Deploy static content to Pages
 on:
   # Runs on pushes targeting the default branch
   push:
-    branches: ["master"]
+    branches: ["master", "beamer-tutorial-2025"]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -22,26 +22,38 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build_pdf: # New job for PDF compilation
+  build_pdf: # Job for LaTeX and Beamer PDF compilation
     runs-on: ubuntu-latest
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Compile LaTeX to PDF
+    - name: Compile LaTeX (main.tex)
       uses: xu-cheng/latex-action@v3
       with:
         root_file: main.tex
 
-    - name: Upload PDF artifact
+    - name: Compile Beamer tutorial (beamer-tutorial.tex)
+      uses: xu-cheng/latex-action@v3
+      with:
+        root_file: beamer-tutorial.tex
+
+    - name: Upload main PDF artifact
       uses: actions/upload-artifact@v4
       with:
         name: latex-pdf-output
-        path: main.pdf # Assuming main.pdf is in the root after compilation
+        path: main.pdf
 
+    - name: Upload beamer PDF artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: beamer-pdf-output
+        path: beamer-tutorial.pdf
 
   # Single deploy job since we're just deploying
   deploy:
+    # Only deploy from the protected default branch
+    if: github.ref == 'refs/heads/master'
     needs: [build_pdf]
     environment:
       name: github-pages
@@ -55,13 +67,15 @@ jobs:
     - name: Download all artifacts
       uses: actions/download-artifact@v4
       with:
-        path: artifacts
+        path: artifacts/ # Downloads both latex-pdf-output and beamer-pdf-output
 
     - name: Prepare public directory for Pages
       run: |
         mkdir public
-        # Move PDF to public/
+        # Move PDFs to public/
         mv artifacts/latex-pdf-output/main.pdf public/
+        mv artifacts/beamer-pdf-output/beamer-tutorial.pdf public/
+        ls -l public
 
     - name: Setup Pages
       uses: actions/configure-pages@v5
