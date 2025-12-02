@@ -4,7 +4,7 @@ name: Deploy static content to Pages
 on:
   # Runs on pushes targeting the default branch
   push:
-    branches: ["master", "beamer-tutorial-2025"]
+    branches: ["master", "main", "6-html-support"]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -22,39 +22,45 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build_pdf: # Job for LaTeX and Beamer PDF compilation
+  build_assets: # Job for PDF and HTML compilation
     runs-on: ubuntu-latest
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Compile LaTeX (main.tex)
-      uses: xu-cheng/latex-action@v3
-      with:
-        root_file: main.tex
+    - name: Compile main.tex to PDF
+      run: |
+        docker run --rm --user $(id -u):$(id -g) \
+          -v "${{ github.workspace }}":/workdir \
+          -w /workdir \
+          ghcr.io/xu-cheng/texlive-full:latest \
+          sh -c "latexmk -C main.tex && latexmk -pdf -interaction=nonstopmode -halt-on-error -file-line-error main.tex"
 
-    - name: Compile Beamer tutorial (beamer-tutorial.tex)
-      uses: xu-cheng/latex-action@v3
-      with:
-        root_file: beamer-tutorial.tex
+    - name: Compile main.tex to HTML
+      run: |
+        docker run --rm --user $(id -u):$(id -g) \
+          -v "${{ github.workspace }}":/workdir \
+          -w /workdir \
+          ghcr.io/xu-cheng/texlive-full:latest \
+          sh -c "rm -rf main-html && make4ht main.tex 'xhtml,css-in' -d main-html"
 
-    - name: Upload main PDF artifact
+    - name: Upload PDF artifact
       uses: actions/upload-artifact@v4
       with:
-        name: latex-pdf-output
+        name: pdf-output
         path: main.pdf
 
-    - name: Upload beamer PDF artifact
+    - name: Upload HTML artifact
       uses: actions/upload-artifact@v4
       with:
-        name: beamer-pdf-output
-        path: beamer-tutorial.pdf
+        name: html-output
+        path: main-html/
 
   # Single deploy job since we're just deploying
   deploy:
-    # Only deploy from the protected default branch
-    if: github.ref == 'refs/heads/master'
-    needs: [build_pdf]
+    # Only deploy from the protected default branch (support common names)
+    if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main'
+    needs: [build_assets]
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -66,25 +72,36 @@ jobs:
     steps:
     - name: Download all artifacts
       uses: actions/download-artifact@v4
+      if: ${{ !env.ACT }}
       with:
-        path: artifacts/ # Downloads both latex-pdf-output and beamer-pdf-output
+        path: artifacts/
 
     - name: Prepare public directory for Pages
+      if: ${{ !env.ACT }}
       run: |
         mkdir public
-        # Move PDFs to public/
-        mv artifacts/latex-pdf-output/main.pdf public/
-        mv artifacts/beamer-pdf-output/beamer-tutorial.pdf public/
-        ls -l public
+        # Move assets to public/
+        mv artifacts/pdf-output/main.pdf public/
+        mv artifacts/html-output public/main-html
+        # Create a simple index page
+        echo '<html><head><title>ALP Tutorial Artifacts</title></head><body>' > public/index.html
+        echo '<h1>ALP Tutorial Artifacts</h1><ul>' >> public/index.html
+        echo '<li><a href="main.pdf">Main PDF</a></li>' >> public/index.html
+        echo '<li><a href="main-html/main.html">Main HTML</a></li>' >> public/index.html
+        echo '</ul></body></html>' >> public/index.html
+        ls -lR public
 
     - name: Setup Pages
+      if: ${{ !env.ACT }}
       uses: actions/configure-pages@v5
 
     - name: Upload Pages artifact
+      if: ${{ !env.ACT }}
       uses: actions/upload-pages-artifact@v3
       with:
         path: ./public
 
     - name: Deploy to GitHub Pages
+      if: ${{ !env.ACT }}
       id: deployment
       uses: actions/deploy-pages@v4

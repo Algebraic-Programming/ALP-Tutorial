@@ -69,6 +69,16 @@ check-deps:
 	if ! kpsewhich beamer.cls >/dev/null 2>&1; then echo "Missing: Beamer class (install latex-beamer or texlive-latex-recommended)"; ok=0; fi; \
 	if [ $$ok -eq 1 ]; then echo "Dependency check: OK"; else echo "See 'make deps' for install hints."; fi
 
+# --- local CI testing -------------------------------------------------------
+.PHONY: test-ci
+test-ci:
+	@if ! command -v act >/dev/null 2>&1; then \
+		echo "Error: 'act' is not installed. Please see README.md for installation instructions."; \
+		exit 1; \
+	fi
+	@echo "==> Running local CI test with 'act'..."
+	act push -P ubuntu-latest=catthehacker/ubuntu:act-latest --container-architecture linux/amd64
+
 # --- beamer target ----------------------------------------------------------
 BEAMER_MAIN := beamer-tutorial
 BEAMER_SRC  := $(BEAMER_MAIN).tex
