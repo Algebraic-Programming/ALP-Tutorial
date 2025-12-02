@@ -32,25 +32,11 @@ jobs:
       uses: xu-cheng/latex-action@v3
       with:
         root_file: main.tex
-        extra_system_packages: >-
-          texlive-fonts-recommended
-          texlive-latex-recommended
-          texlive-latex-extra
-          texlive-science
-          texlive-xetex
-          latexmk
 
     - name: Compile Beamer tutorial (beamer-tutorial.tex)
       uses: xu-cheng/latex-action@v3
       with:
         root_file: beamer-tutorial.tex
-        extra_system_packages: >-
-          texlive-fonts-recommended
-          texlive-latex-recommended
-          texlive-latex-extra
-          texlive-science
-          texlive-xetex
-          latexmk
 
     - name: Upload main PDF artifact
       uses: actions/upload-artifact@v4
