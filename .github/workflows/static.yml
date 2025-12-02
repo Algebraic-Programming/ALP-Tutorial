@@ -81,8 +81,20 @@ jobs:
       run: |
         mkdir public
         # Move assets to public/
-        mv artifacts/pdf-output/main.pdf public/
-        mv artifacts/html-output public/main-html
+        # Move PDF if present
+        if [ -f artifacts/pdf-output/main.pdf ]; then
+          mv artifacts/pdf-output/main.pdf public/
+        else
+          echo "Warning: PDF artifact not found at artifacts/pdf-output/main.pdf"
+        fi
+        # Move HTML artifact — downloaded artifact may contain a nested 'main-html' dir
+        if [ -d artifacts/html-output/main-html ]; then
+          mv artifacts/html-output/main-html public/
+        elif [ -d artifacts/html-output ]; then
+          mv artifacts/html-output public/main-html
+        else
+          echo "Warning: HTML artifact not found in artifacts/html-output"
+        fi
         # Create a simple index page
         echo '<html><head><title>ALP Tutorial Artifacts</title></head><body>' > public/index.html
         echo '<h1>ALP Tutorial Artifacts</h1><ul>' >> public/index.html
